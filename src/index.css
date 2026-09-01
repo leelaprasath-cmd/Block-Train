@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Professional Bright Executive Palette (Stripe / Apple / Linear Light) */
+  --color-primary: 221 83% 53%; /* Electric Cobalt */
+  --color-primary-foreground: 0 0% 100%;
+  --color-primary-500: 221 83% 53%;
+  --color-primary-600: 224 76% 48%;
+  
+  --color-accent: 199 89% 48%; /* Radiant Cyan */
+  --color-accent-foreground: 222 47% 11%;
+  
+  --border-radius: 16px;
+  --glass-opacity: 0.85;
+  --motion-stiffness: 1;
+}
+
+html {
+  color-scheme: light;
+  background-color: #f8fafc;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  overflow-x: hidden;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Precision Light Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 3D Spatial Perspective */
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.perspective-800 {
+  perspective: 800px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Subtle Kinetic Grid for Bright Theme */
+.bg-kinetic-grid {
+  background-color: #f8fafc;
+  background-size: 48px 48px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+.bg-dots-grid {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* High-Precision Bright Glass Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, var(--glass-opacity, 0.85));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+.glass-panel-interactive {
+  background: rgba(255, 255, 255, var(--glass-opacity, 0.85));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  border-color: rgba(148, 163, 184, 0.6);
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.10), 0 0 20px -5px hsl(var(--color-primary) / 0.15);
+  transform: translateY(-3px);
+}
+
+/* Specular Glare Effect for Bright Surfaces */
+.specular-glare {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.1) 40%,
+    transparent 100%
+  );
+}
+
+/* Typography Gradients in Bright Mode */
+.text-gradient-kinetic {
+  background: linear-gradient(135deg, #0f172a 10%, #334155 50%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 60%, #4f46e5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Wireframe Blueprint Utilities in Bright Mode */
+.wireframe-grid {
+  background-color: #f0f9ff;
+  background-image: 
+    linear-gradient(to right, rgba(2, 132, 199, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(2, 132, 199, 0.18) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
