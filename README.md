@@ -13,7 +13,7 @@
 
 **Replacing archaic paper-based track approvals with a live, interactive map, automated AI path optimization, and instantaneous voice/SMS dispatch protocols.**
 
-[🌐 Live Digital Twin](https://leelaprasath-cmd.github.io/kinetic-ui-ux-lab/) • [📖 Problem Statement SIH26027](#-the-sih26027-problem) • [🛠️ Architecture](#-system-architecture)
+[🌐 Live Digital Twin](https://leelaprasath-cmd.github.io/Block-Train/) • [📖 Problem Statement SIH26027](#-the-sih26027-problem) • [🛠️ Architecture](#-system-architecture)
 
 </div>
 
@@ -103,8 +103,8 @@ Currently, authorizing a railway maintenance "block" requires a staggering amoun
 
 ```bash
 # Clone the repository
-git clone https://github.com/leelaprasath-cmd/kinetic-ui-ux-lab.git
-cd kinetic-ui-ux-lab
+git clone https://github.com/leelaprasath-cmd/Block-Train.git
+cd Block-Train
 
 # Install dependencies
 npm install
