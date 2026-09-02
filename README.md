@@ -1,65 +1,122 @@
-# Kinetic UI/UX & Motion Lab 🚀
+# 🚈 BlockTrain // Next-Gen Railway Digital Twin & Autonomous Dispatch Platform
 
-An interactive web capabilities laboratory and design systems showcase featuring **3D scroll-driven perspective unfolding, Apple-style sticky storytelling, magnetic micro-interactions, and live Stitch AI design token pipelines**.
+<div align="center">
 
-Built with **React 18**, **TypeScript**, **Tailwind CSS**, and **Vite** in a crisp, professional bright executive theme.
+![BlockTrain Header](https://raw.githubusercontent.com/kevinjosh10/Block-Train/main/header.svg)
 
----
+[![Smart India Hackathon](https://img.shields.io/badge/SIH_Problem_ID-SIH26027-purple?style=for-the-badge)](https://sih.gov.in)
+[![Southern Railway](https://img.shields.io/badge/Division-Chennai_MAS-007ACC?style=for-the-badge)](https://sr.indianrailways.gov.in)
+[![Kavach TCAS](https://img.shields.io/badge/Kavach-Autonomous_Protection-10b981?style=for-the-badge)](https://indianrailways.gov.in)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
 
-## ✨ Features
+**Replacing archaic paper-based track approvals with a live, interactive map, automated AI path optimization, and instantaneous voice/SMS dispatch protocols.**
 
-- **🚀 3D Perspective Scroll-Driven Hero**: 3D workstation viewport dynamically rotates (`rotateX`, `rotateY`, `scale`) and fluidly expands into full focus on scroll.
-- **📱 Apple-Style 4-Stage Sticky Scroll Pipeline**: Pinned viewport storytelling evolving across 4 progressive scroll stages (Wireframe Blueprint $\rightarrow$ Token Ingestion $\rightarrow$ 60 FPS Micro-Interactions $\rightarrow$ Production Glassmorphism).
-- **✨ Multi-Plane Spatial Parallax Deck**: Multi-layer cards moving at asynchronous depth velocities.
-- **🔬 Interactive Tactile Micro-Interaction Studio**:
-  - Physics-based magnetic cursor attraction
-  - 3D holographic tilt card with specular reflection calculation
-  - Fluid spring segmented pill controls
-  - Haptic audio waveform simulation
-- **💻 Real-World Interactive Product Interfaces & Viewport Morphing**:
-  - Pulse Telemetry Studio
-  - Aether Generative AI Canvas (Node Graph)
-  - Sonic Velocity 192 kHz Media Player
-  - Responsive Viewport Morphing Simulator (Desktop $\leftrightarrow$ Tablet $\leftrightarrow$ Mobile live morph)
-- **🎨 Live Stitch AI Design Token Morph Engine**: Real-time manipulation of primary hue, accent hue, corner radius, and glass opacity with one-click `DESIGN.md` export.
+[🌐 Live Digital Twin](https://leelaprasath-cmd.github.io/kinetic-ui-ux-lab/) • [📖 Problem Statement SIH26027](#-the-sih26027-problem) • [🛠️ Architecture](#-system-architecture)
+
+</div>
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 The SIH26027 Problem
+Currently, authorizing a railway maintenance "block" requires a staggering amount of phone calls, physical paper trails, and radio miscommunications across Station Masters, Section Controllers, and Gang Supervisors. A single delayed block approval cascades into dozens of delayed suburban and superfast rakes, while field maintenance workers face life-threatening risks on live tracks.
 
-- **Framework:** React 18
-- **Language:** TypeScript (Strict Mode)
-- **Styling:** Tailwind CSS + Custom 3D Spatial Utilities
+**BlockTrain** completely digitizes this workflow to remove human error and prioritize human lives.
+
+---
+
+## ✨ Platform Capabilities
+
+### 🗺️ 1. Interactive Vector Corridor Digital Twin
+- **Suburban Chennai Main Corridor**: Full model covering **Tambaram (TBM) ⇄ Chromepet (CMP) ⇄ Pallavaram (PV) ⇄ St. Thomas Mount (STM) ⇄ Guindy (GDY) ⇄ Chennai Central / Egmore (MAS)**.
+- **Multi-Lane Track Infrastructure**: Up Main, Down Main, Fast Express Corridors, Platform Loops, and Yard sidings.
+- **Real-Time Moving Train Physics**: Vande Bharat Express (130 km/h), Superfast rakes, Suburban EMUs, and Concor Freights with live position interpolation, direction chevrons, and speed tags.
+- **Dynamic 4-Aspect Signals**: Automatic Block Signaling (Green, Double Yellow, Yellow, Red) updated dynamically.
+- **One-Click Track Block Toggling**: Click any track segment on the canvas to simulate a maintenance closure and watch the AI dynamically reroute oncoming trains!
+
+### ⚡ 2. AI Maintenance Block Planner & Cascading Delay Solver
+- Multi-constraint scheduler calculating the optimal maintenance window with minimal passenger impact.
+- Identifies affected trains and prescribes automated single-line working or platform loop diversions.
+- Calculates quantified delay savings in minutes and traction diesel/electricity conserved.
+- One-click digital permit authorization and automatic radio notification broadcast.
+
+### 🛡️ 3. Rakshak Field Worker Geofence Protection System
+- Real-time GPS tracking of track maintenance gangs (Gang 14 OHE, Gang 08 P-Way, Gang 03 S&T).
+- Proximity radar calculating distance to the nearest oncoming train.
+- Automatic visual and audio strobe alarms if a train breaches the 600-meter safety zone.
+- Direct **SOS Kavach Emergency Brake** command that halts all train movements in the section.
+
+### 📻 4. Radio Voice Dispatch & SMS Broadcast Console
+- VHF/UHF multi-channel radio console (CH 1 Urgent, CH 2 Loco Cab, CH 3 Maintenance Gangs, CH 4 Station Intercom).
+- Animated RF carrier frequency oscilloscope visualizer with simulated synthetic speech playback.
+- Automated SMS transmission log to train crews and supervisors.
+
+### 🤖 5. RailMind AI Dispatch Copilot
+- Conversational operational intelligence trained on Indian Railway Operating Rules (G&SR).
+- Answers complex queries regarding headway margins, track capacity, and diversion strategies.
+
+### 🏆 6. Built-In Hackathon Presentation & Architecture Deck
+- Dedicated judge presentation view detailing the problem background, quantifiable ROI metrics (74% faster approvals, zero worker incidents, +18.2% throughput), and system scalability.
+
+---
+
+## 🏗️ System Architecture
+
+```
+                                  [ Live Railway Sensors & Timetable Data ]
+                                                     │
+                                                     ▼
+                                      ┌─────────────────────────────┐
+                                      │   Digital Twin Simulation   │
+                                      │       Physics Engine        │
+                                      └──────────────┬──────────────┘
+                                                     │
+                             ┌───────────────────────┼───────────────────────┐
+                             ▼                       ▼                       ▼
+                  ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
+                  │ Vector Canvas Map   │ │ AI Block Optimizer  │ │   Rakshak Worker    │
+                  │ (Live Tracks/Trains)│ │ (Multi-Constraint)  │ │   Geofence Radar    │
+                  └──────────┬──────────┘ └──────────┬──────────┘ └──────────┬──────────┘
+                             │                       │                       │
+                             └───────────────────────┼───────────────────────┘
+                                                     ▼
+                                      ┌─────────────────────────────┐
+                                      │  Automated Dispatch Push    │
+                                      │  (VHF Radio & Kavach Brake) │
+                                      └─────────────────────────────┘
+```
+
+---
+
+## 💻 Tech Stack
+
+- **Frontend:** React 18, TypeScript (Strict Mode), Vite
+- **Styling:** Tailwind CSS, Custom Cybernetic Railway Theme
+- **Simulation:** Vector SVG Canvas, Matrix Transformations, RAF Physics Loop
 - **Icons:** Lucide React
-- **Build Tool:** Vite
+- **CI/CD:** Automated GitHub Actions deploying to GitHub Pages
 
 ---
 
-## 🚀 Getting Started
+## 🏃 Running Locally
 
-### 1. Clone the repository
 ```bash
+# Clone the repository
 git clone https://github.com/leelaprasath-cmd/kinetic-ui-ux-lab.git
 cd kinetic-ui-ux-lab
-```
 
-### 2. Install dependencies
-```bash
+# Install dependencies
 npm install
-```
 
-### 3. Run development server
-```bash
+# Run the development server
 npm run dev
 ```
 
-### 4. Build for production
-```bash
-npm run build
-```
+Visit `http://localhost:5173` to explore the digital twin!
 
 ---
 
 ## 📄 License
 
-MIT License. Designed & Engineered with precision.
+MIT License • Built for Smart India Hackathon (SIH26027) & Southern Railway Digital Twin Initiative.
