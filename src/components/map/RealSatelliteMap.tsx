@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { RailwayPolylines } from './RailwayPolylines';
 import { RealStationMarkers } from './RealStationMarkers';
-import { RealTrainMarkers } from './RealTrainMarkers';
-import { GpsTrainModal } from '../inspection/GpsTrainModal';
-import { useRealGpsTrains, ActiveGpsTrain } from '../../lib/hooks/useRealGpsTrains';
 import { REAL_STATIONS, GeoStation } from '../../data/realTracksData';
 import { Layers, Construction, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -135,20 +132,15 @@ const MapControls = ({
 };
 
 export const RealSatelliteMap = ({
-  speedMultiplier,
   blockActive,
-  onToggleBlock,
-  onSelectTrainWimt
+  onToggleBlock
 }: RealSatelliteMapProps) => {
   const apiKey =
     ((import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY as string) ||
     'AIzaSyB0bvqkB-Q46jHPxMs7YyJ-SM94MfYJ4tY';
 
   const [mapType, setMapType] = useState<string>('hybrid');
-  const [selectedTrain, setSelectedTrain] = useState<ActiveGpsTrain | null>(null);
   const [_selectedStation, setSelectedStation] = useState<GeoStation | null>(null);
-
-  const trains = useRealGpsTrains(speedMultiplier, blockActive);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-slate-900">
@@ -172,18 +164,6 @@ export const RealSatelliteMap = ({
             selectedStationId={_selectedStation?.id}
           />
 
-          {/* Live Moving Trains */}
-          <RealTrainMarkers
-            trains={trains}
-            onSelectTrain={(train) => {
-              setSelectedTrain(train);
-              if (onSelectTrainWimt) {
-                onSelectTrainWimt(train.id, train.currentSpeedKmH);
-              }
-            }}
-            selectedTrainId={selectedTrain?.id}
-          />
-
           {/* Floating UI Controls */}
           <MapControls
             blockActive={blockActive}
@@ -193,12 +173,6 @@ export const RealSatelliteMap = ({
           />
         </Map>
       </APIProvider>
-
-      {/* Train Telemetry Inspection Modal */}
-      <GpsTrainModal
-        train={selectedTrain}
-        onClose={() => setSelectedTrain(null)}
-      />
     </div>
   );
 };

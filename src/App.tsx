@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { RealSatelliteMap } from './components/map/RealSatelliteMap';
 import { DigitalTwinMap } from './components/map/DigitalTwinMap';
+import { RealSatelliteMap } from './components/map/RealSatelliteMap';
 import { DashboardHUD } from './components/ui/DashboardHUD';
 import { SpeedController } from './components/ui/SpeedController';
 import { WhereIsMyTrainDrawer } from './components/wimt/WhereIsMyTrainDrawer';
 import { useClock } from './lib/hooks/useClock';
-import { useTrainPhysics } from './lib/hooks/useTrainPhysics';
 import { DEFAULT_SPEED_MULTIPLIER } from './lib/constants';
 import { Satellite, Train as TrainIcon, Layers } from 'lucide-react';
 
 export default function App() {
-  // Mode: 'satellite' (Default: Real World Satellite GIS with Exact Surveyed Tracks) or 'schematic' (Vector Diagram)
-  const [mode, setMode] = useState<'satellite' | 'schematic'>('satellite');
+  // Mode: 'schematic' (Default: Surveyed Schematic Twin with all Chetpet branches & flexible trains) or 'satellite' (Google Earth GIS)
+  const [mode, setMode] = useState<'schematic' | 'satellite'>('schematic');
   const [speedMultiplier, setSpeedMultiplier] = useState(DEFAULT_SPEED_MULTIPLIER);
   const [blockActive, setBlockActive] = useState(false);
 
@@ -21,7 +20,6 @@ export default function App() {
   const [selectedTrainSpeed, setSelectedTrainSpeed] = useState(128);
 
   const time = useClock();
-  const trains = useTrainPhysics(speedMultiplier);
 
   const handleSelectTrainForWimt = (trainId: string, speedKmH: number) => {
     setSelectedTrainNum(trainId);
@@ -30,17 +28,21 @@ export default function App() {
   };
 
   return (
-    <div className="w-full h-screen bg-[#f8fafc] overflow-hidden relative font-sans text-slate-800 selection:bg-blue-500/20 select-none">
+    <div className="w-full h-screen bg-[#f8fafc] overflow-hidden relative font-sans text-slate-800 selection:bg-blue-500/20 select-none railway-cursor">
       {/* Primary Map Viewport */}
-      {mode === 'satellite' ? (
+      {mode === 'schematic' ? (
+        <DigitalTwinMap
+          speedMultiplier={speedMultiplier}
+          blockActive={blockActive}
+          onToggleBlock={() => setBlockActive(!blockActive)}
+          onSelectTrainForWimt={handleSelectTrainForWimt}
+        />
+      ) : (
         <RealSatelliteMap
           speedMultiplier={speedMultiplier}
           blockActive={blockActive}
           onToggleBlock={() => setBlockActive(!blockActive)}
-          onSelectTrainWimt={handleSelectTrainForWimt}
         />
-      ) : (
-        <DigitalTwinMap trains={trains} />
       )}
 
       {/* Floating Executive Dashboard HUD */}
@@ -66,6 +68,19 @@ export default function App() {
         {/* View Mode Switcher */}
         <div className="flex items-center gap-1 bg-white/95 p-1 rounded-xl border border-slate-200/90 backdrop-blur-md shadow-lg font-mono">
           <button
+            onClick={() => setMode('schematic')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              mode === 'schematic'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+            title="Surveyed Schematic Twin with all Chetpet branches and flexible trains"
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-300" />
+            <span>Schematic Twin</span>
+          </button>
+
+          <button
             onClick={() => setMode('satellite')}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
               mode === 'satellite'
@@ -74,21 +89,8 @@ export default function App() {
             }`}
             title="Real-World Satellite GIS with Surveyed Railway Tracks & Crossovers"
           >
-            <Satellite className="w-3.5 h-3.5 text-amber-300" />
+            <Satellite className="w-3.5 h-3.5 text-slate-500" />
             <span>Real Satellite GIS</span>
-          </button>
-
-          <button
-            onClick={() => setMode('schematic')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              mode === 'schematic'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-            title="Vector Schematic Diagram"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Schematic Twin</span>
           </button>
         </div>
 

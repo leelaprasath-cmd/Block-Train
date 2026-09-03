@@ -28,21 +28,29 @@ Currently, authorizing a railway maintenance "block" requires a staggering amoun
 
 ## ✨ Platform Capabilities
 
-### 🛰️ 1. Real-World Satellite GIS Track Twin (Surveyed Tracks & Crossovers)
-- **100% Surveyed Real-World Track Geometry**: Sourced directly from global railway geospatial surveys (OpenRailwayMap). Zero mock lines, zero straight approximations—every single curve and bend follows the physical steel rails visible on the satellite photos!
-- **153 Crossover Turnouts & Merging Switches**: Authentic physical turnout switches where parallel tracks cross, diverge, and merge across major junctions (Chengalpattu Jn, Tambaram Yard, St. Thomas Mount, and Chennai Egmore).
-- **134 Station Platform Loops**: Precise platform loop tracks at passenger stations.
-- **Physical Multi-Coach Train Rakes**: Real rolling stock (Vande Bharat bullet nose, WAP-7 LHB coaches, Suburban EMUs, Heavy Freight with ISO containers) gliding with rotating tangent bearings along the true curves.
-- **Dynamic AI Maintenance Block**: One-click block injection with animated hazard glow on the surveyed Tambaram ⇄ Chromepet section with automatic train rerouting.
+### 📐 1. Surveyed Schematic Digital Twin (Complete Real-World Network)
+- **844 Surveyed Railway Segments**: Sourced directly from global railway geospatial surveys (OpenRailwayMap). Zero AI-generated or straight mock lines—every single bend, curve, and elevation follows the exact physical alignment!
+- **Complete Branch Complex After Chetpet (Shetpet)**:
+  - Broad gauge mainlines crossing the Cooum River railway bridge.
+  - Branches leading into **Chennai Egmore (MS)** with all 11 terminal platforms, yard throat, and car shed leads.
+  - Quadruple suburban tracks through **Chennai Park (MPK)** and **Chennai Park Town (MPKT)**.
+  - Major throat crossovers and platforms 1 to 17 at **MGR Chennai Central (MAS)**.
+  - Moore Market Complex (MMC) suburban terminal lines.
+  - Basin Bridge Junction (BBQ) crossovers, **Chennai Beach (MSB)**, and Chennai Port container freight sidings.
+- **282 Physical Crossover Turnouts & Merging Switches**: Exact surveyed switch points where lines physically cross, diverge, and merge!
+- **Flexible Articulated Multi-Coach Trains (Zero Jitter / No Shaking)**:
+  - Each coach is an independently articulated vehicle bending organically along track curves.
+  - Lookahead tangent smoothing removes all angle jitter, creating butter-smooth, lifelike train movement.
+  - Forward-projecting yellow LED headlight beams illuminating the steel rails.
+  - High-contrast professional railway precision reticle cursor for effortless navigation.
 
-### 📱 2. "Where Is My Train" Live Schedule & NTES Running Status
+### 🛰️ 2. Real-World Satellite GIS Track Layer (Google Maps Platform)
+- Pure geographic satellite inspection layer with surveyed track polylines and station platform markers directly on Google Earth imagery.
+
+### 📱 3. "Where Is My Train" Live Schedule & NTES Running Status
 - **Integrated Timetable & Live Journey Tracker**: Authentic "Where Is My Train" drawer showing full station-by-station timetables, distances (km), Scheduled Arrival (STA), Scheduled Departure (STD), and platform assignments.
 - **Live Running Telemetry**: Real-time speedometer, delay indicator (`🟢 ON TIME` or `🔴 +6 MIN DELAY`), distance-to-next-station countdown, and Kavach TCAS radio connection.
 - **Interactive Train Tracking**: Search or select any rake (**20643 Vande Bharat**, **12638 Pandian Express**, **40012 Suburban EMU Local**, etc.) or click any train moving on the track to immediately open its live timetable schedule.
-
-### 📐 3. Authentic Vector Schematic Digital Twin
-- Interactive schematic diagram with smooth pan & zoom powered by `react-zoom-pan-pinch`.
-- Station platform loops (`PF-1`, `PF-2`...), throat curves, and station deceleration physics.
 
 ### ⚡ 2. AI Maintenance Block Planner & Cascading Delay Solver
 - Multi-constraint scheduler calculating the optimal maintenance window with minimal passenger impact.
