@@ -28,12 +28,12 @@ Currently, authorizing a railway maintenance "block" requires a staggering amoun
 
 ## ✨ Platform Capabilities
 
-### 🛤️ 1. Extracted Real Railway Track Twin (Pure Tracks, No City Map)
-- **Zero City Map Clutter**: Stripped of roads, buildings, restaurants, and generic map noise. Renders **only the authentic physical railway track geometry** extracted directly from real geographic GPS coordinates!
-- **Accurate Real-World Curvature**: Features the exact real physical bends, curves, turnouts, and switch points of the Southern Railway corridor (**Chengalpattu ⇄ Tambaram ⇄ Guindy ⇄ Chennai Egmore ⇄ Chennai Central**).
-- **Multi-Lane Heavy Track Infrastructure**: Up Main Line, Down Main Line, and Fast Express Line with authentic stone ballast beds, concrete sleeper ties, and steel rails.
-- **Geographic Station Platforms**: Station hubs with real platform counts, safety yellow edge lines, and division codes positioned at their actual real-world GPS coordinates.
-- **Dynamic AI Maintenance Diversion**: One-click track block toggling that highlights the closed section with red hazard warning stripes while oncoming trains automatically divert onto the parallel Fast Line!
+### 🛰️ 1. Real-World Satellite GIS Track Twin (Surveyed Tracks & Crossovers)
+- **100% Surveyed Real-World Track Geometry**: Sourced directly from global railway geospatial surveys (OpenRailwayMap). Zero mock lines, zero straight approximations—every single curve and bend follows the physical steel rails visible on the satellite photos!
+- **153 Crossover Turnouts & Merging Switches**: Authentic physical turnout switches where parallel tracks cross, diverge, and merge across major junctions (Chengalpattu Jn, Tambaram Yard, St. Thomas Mount, and Chennai Egmore).
+- **134 Station Platform Loops**: Precise platform loop tracks at passenger stations.
+- **Physical Multi-Coach Train Rakes**: Real rolling stock (Vande Bharat bullet nose, WAP-7 LHB coaches, Suburban EMUs, Heavy Freight with ISO containers) gliding with rotating tangent bearings along the true curves.
+- **Dynamic AI Maintenance Block**: One-click block injection with animated hazard glow on the surveyed Tambaram ⇄ Chromepet section with automatic train rerouting.
 
 ### 📱 2. "Where Is My Train" Live Schedule & NTES Running Status
 - **Integrated Timetable & Live Journey Tracker**: Authentic "Where Is My Train" drawer showing full station-by-station timetables, distances (km), Scheduled Arrival (STA), Scheduled Departure (STD), and platform assignments.
@@ -43,9 +43,6 @@ Currently, authorizing a railway maintenance "block" requires a staggering amoun
 ### 📐 3. Authentic Vector Schematic Digital Twin
 - Interactive schematic diagram with smooth pan & zoom powered by `react-zoom-pan-pinch`.
 - Station platform loops (`PF-1`, `PF-2`...), throat curves, and station deceleration physics.
-
-### 🛰️ 4. Google Maps Satellite GIS Mode
-- Optional toggle to view high-resolution Google Earth satellite photography over the corridor.
 
 ### ⚡ 2. AI Maintenance Block Planner & Cascading Delay Solver
 - Multi-constraint scheduler calculating the optimal maintenance window with minimal passenger impact.

@@ -12,6 +12,7 @@ interface RealSatelliteMapProps {
   speedMultiplier: number;
   blockActive: boolean;
   onToggleBlock: () => void;
+  onSelectTrainWimt?: (trainId: string, speedKmH: number) => void;
 }
 
 // Inner Station Navigator with access to map instance
@@ -136,7 +137,8 @@ const MapControls = ({
 export const RealSatelliteMap = ({
   speedMultiplier,
   blockActive,
-  onToggleBlock
+  onToggleBlock,
+  onSelectTrainWimt
 }: RealSatelliteMapProps) => {
   const apiKey =
     ((import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY as string) ||
@@ -173,7 +175,12 @@ export const RealSatelliteMap = ({
           {/* Live Moving Trains */}
           <RealTrainMarkers
             trains={trains}
-            onSelectTrain={(train) => setSelectedTrain(train)}
+            onSelectTrain={(train) => {
+              setSelectedTrain(train);
+              if (onSelectTrainWimt) {
+                onSelectTrainWimt(train.id, train.currentSpeedKmH);
+              }
+            }}
             selectedTrainId={selectedTrain?.id}
           />
 

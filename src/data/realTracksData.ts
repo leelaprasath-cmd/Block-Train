@@ -59,7 +59,9 @@ export const REAL_TRACK_WAYPOINTS: { lat: number; lng: number }[] = [
   { lat: 13.0827, lng: 80.2755 }  // Chennai Central
 ];
 
-// Generate parallel lines for Up Line, Down Line, and Fast Line
+import { CONTINUOUS_SURVEYED_CORRIDOR } from './exactSurveyedTracks';
+
+// Generate parallel lines for Up Line, Down Line, and Fast Line using real surveyed alignment
 export const getOffsetPolyline = (points: { lat: number; lng: number }[], offsetDistance: number) => {
   return points.map((p, i) => {
     const next = points[i + 1] || p;
@@ -71,15 +73,15 @@ export const getOffsetPolyline = (points: { lat: number; lng: number }[], offset
     const nLat = -dLng / length;
     const nLng = dLat / length;
     return {
-      lat: p.lat + nLat * offsetDistance,
-      lng: p.lng + nLng * offsetDistance
+      lat: Number((p.lat + nLat * offsetDistance).toFixed(6)),
+      lng: Number((p.lng + nLng * offsetDistance).toFixed(6))
     };
   });
 };
 
-export const UP_MAIN_LINE = getOffsetPolyline(REAL_TRACK_WAYPOINTS, -0.00008);
-export const DOWN_MAIN_LINE = getOffsetPolyline(REAL_TRACK_WAYPOINTS, 0.00008);
-export const FAST_LINE = getOffsetPolyline(REAL_TRACK_WAYPOINTS, 0.00022);
+export const UP_MAIN_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, -0.000035);
+export const DOWN_MAIN_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, 0.000035);
+export const FAST_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, 0.000095);
 
 // Real Moving Train definitions mapped to GPS
 export interface RealGpsTrain {
