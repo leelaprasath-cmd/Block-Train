@@ -28,18 +28,24 @@ Currently, authorizing a railway maintenance "block" requires a staggering amoun
 
 ## ✨ Platform Capabilities
 
-### 🛰️ 1. Real-World Satellite GIS Track Twin (Google Maps Platform)
-- **High-Resolution Satellite Earth Imagery**: Powered by Google Maps Platform Satellite/Hybrid imagery, displaying real physical tracks, overhead catenary gantries, station platforms, and geographical terrain.
-- **Accurate GPS Track Alignment**: True railway coordinates for the Southern Railway Mainline (**Chengalpattu ⇄ Tambaram ⇄ Guindy ⇄ Chennai Egmore ⇄ Chennai Central**).
-- **Multi-Track Infrastructure**: Parallel polylines for Up Main Line, Down Main Line, and Fast Express Line with real railway curvature.
-- **Live Moving GPS Trains**: Vande Bharat Express (130 km/h), Pandian Superfast Express (110 km/h), Suburban EMUs, and CONCOR Freight rakes navigating along actual real-world track curves.
-- **Dynamic AI Diversion**: Inject maintenance blocks on live tracks and watch oncoming trains dynamically divert onto parallel loops in real time!
-- **Interactive Telemetry HUD**: Click any moving train or station pin to inspect live telemetry, GPS coordinates, heading bearing, and Kavach TCAS radio links.
+### 🛤️ 1. Extracted Real Railway Track Twin (Pure Tracks, No City Map)
+- **Zero City Map Clutter**: Stripped of roads, buildings, restaurants, and generic map noise. Renders **only the authentic physical railway track geometry** extracted directly from real geographic GPS coordinates!
+- **Accurate Real-World Curvature**: Features the exact real physical bends, curves, turnouts, and switch points of the Southern Railway corridor (**Chengalpattu ⇄ Tambaram ⇄ Guindy ⇄ Chennai Egmore ⇄ Chennai Central**).
+- **Multi-Lane Heavy Track Infrastructure**: Up Main Line, Down Main Line, and Fast Express Line with authentic stone ballast beds, concrete sleeper ties, and steel rails.
+- **Geographic Station Platforms**: Station hubs with real platform counts, safety yellow edge lines, and division codes positioned at their actual real-world GPS coordinates.
+- **Dynamic AI Maintenance Diversion**: One-click track block toggling that highlights the closed section with red hazard warning stripes while oncoming trains automatically divert onto the parallel Fast Line!
 
-### 📐 2. Authentic Vector Schematic Digital Twin
-- Interactive canvas with smooth pan & zoom powered by `react-zoom-pan-pinch`.
-- Detailed station layouts, platform numbers (`PF-1`, `PF-2`...), throat curves, and mechanical switch frogs.
-- Dynamic station approach physics with automatic deceleration, passenger dwell stop times, and acceleration.
+### 📱 2. "Where Is My Train" Live Schedule & NTES Running Status
+- **Integrated Timetable & Live Journey Tracker**: Authentic "Where Is My Train" drawer showing full station-by-station timetables, distances (km), Scheduled Arrival (STA), Scheduled Departure (STD), and platform assignments.
+- **Live Running Telemetry**: Real-time speedometer, delay indicator (`🟢 ON TIME` or `🔴 +6 MIN DELAY`), distance-to-next-station countdown, and Kavach TCAS radio connection.
+- **Interactive Train Tracking**: Search or select any rake (**20643 Vande Bharat**, **12638 Pandian Express**, **40012 Suburban EMU Local**, etc.) or click any train moving on the track to immediately open its live timetable schedule.
+
+### 📐 3. Authentic Vector Schematic Digital Twin
+- Interactive schematic diagram with smooth pan & zoom powered by `react-zoom-pan-pinch`.
+- Station platform loops (`PF-1`, `PF-2`...), throat curves, and station deceleration physics.
+
+### 🛰️ 4. Google Maps Satellite GIS Mode
+- Optional toggle to view high-resolution Google Earth satellite photography over the corridor.
 
 ### ⚡ 2. AI Maintenance Block Planner & Cascading Delay Solver
 - Multi-constraint scheduler calculating the optimal maintenance window with minimal passenger impact.
