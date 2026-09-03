@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { RailwayPolylines } from './RailwayPolylines';
 import { RealStationMarkers } from './RealStationMarkers';
+import { RealTrainMarkers } from './RealTrainMarkers';
+import { useRealGpsTrains } from '../../lib/hooks/useRealGpsTrains';
 import { REAL_STATIONS, GeoStation } from '../../data/realTracksData';
 import { Layers, Construction, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -132,8 +134,10 @@ const MapControls = ({
 };
 
 export const RealSatelliteMap = ({
+  speedMultiplier,
   blockActive,
-  onToggleBlock
+  onToggleBlock,
+  onSelectTrainWimt
 }: RealSatelliteMapProps) => {
   const apiKey =
     ((import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY as string) ||
@@ -141,6 +145,8 @@ export const RealSatelliteMap = ({
 
   const [mapType, setMapType] = useState<string>('hybrid');
   const [_selectedStation, setSelectedStation] = useState<GeoStation | null>(null);
+
+  const trains = useRealGpsTrains(speedMultiplier, blockActive);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-slate-900">
@@ -162,6 +168,16 @@ export const RealSatelliteMap = ({
           <RealStationMarkers
             onSelectStation={(st) => setSelectedStation(st)}
             selectedStationId={_selectedStation?.id}
+          />
+
+          {/* Vibrant Colored Dot Train Markers on Satellite View */}
+          <RealTrainMarkers
+            trains={trains}
+            onSelectTrain={(train) => {
+              if (onSelectTrainWimt) {
+                onSelectTrainWimt(train.id, train.currentSpeedKmH);
+              }
+            }}
           />
 
           {/* Floating UI Controls */}

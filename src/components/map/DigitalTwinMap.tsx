@@ -1,18 +1,18 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
 import {
-  SURVEYED_MAIN_TRACKS,
-  SURVEYED_CHETPET_BRANCHES,
-  SURVEYED_TURNOUTS,
-  SURVEYED_STATION_LOOPS,
-  CANVAS_BOUNDS,
-  projectGpsToCanvas
-} from '../../data/surveyedRailwayNetwork';
-import { REAL_STATIONS } from '../../data/realTracksData';
+  CORRIDOR_STATIONS,
+  UP_MAIN_TRACK,
+  DOWN_MAIN_TRACK,
+  UP_SUBURBAN_TRACK,
+  DOWN_SUBURBAN_TRACK,
+  SCHEMATIC_BOUNDS,
+  StationData
+} from '../../data/cglToMasTracks';
 import {
   getArticulatedTrain,
-  pointsToSvgPath
-} from '../../lib/utils/surveyedTrackSpline';
+  trackToSvgPath
+} from '../../lib/utils/cglToMasSpline';
 import {
   ArticulatedFlexibleTrain,
   FlexibleTrainConfig
@@ -25,14 +25,6 @@ interface DigitalTwinMapProps {
   onToggleBlock: () => void;
   onSelectTrainForWimt?: (trainId: string, speedKmH: number) => void;
 }
-
-// All corridor stations including Chetpet and Chennai Beach
-const ALL_CORRIDOR_STATIONS = [
-  ...REAL_STATIONS,
-  { id: 'MSC', code: 'MSC', name: 'Chetpet', lat: 13.0685, lng: 80.2428, platforms: 4, division: 'MAS', type: 'suburban' as const },
-  { id: 'MPK', code: 'MPK', name: 'Chennai Park', lat: 13.0805, lng: 80.2745, platforms: 4, division: 'MAS', type: 'suburban' as const },
-  { id: 'MSB', code: 'MSB', name: 'Chennai Beach', lat: 13.0945, lng: 80.2930, platforms: 8, division: 'MAS', type: 'terminal' as const }
-];
 
 const TRAIN_CONFIGS: FlexibleTrainConfig[] = [
   {
@@ -77,16 +69,20 @@ const StationNavigatorControls = ({
   onToggleBlock: () => void;
 }) => {
   const { setTransform, zoomIn, zoomOut, resetTransform } = useControls();
-  const [activeCode, setActiveCode] = useState<string>('MSC');
+  const [activeCode, setActiveCode] = useState<string>('TBM');
 
-  const jumpTo = (st: (typeof ALL_CORRIDOR_STATIONS)[0]) => {
+  const jumpTo = (st: StationData) => {
     setActiveCode(st.code);
-    const { x, y } = projectGpsToCanvas(st.lat, st.lng);
-    const scale = 0.75;
-    const targetX = -x * scale + window.innerWidth / 2;
-    const targetY = -y * scale + window.innerHeight / 2;
+    const scale = 0.85;
+    const targetX = -st.x * scale + window.innerWidth / 2;
+    const targetY = -st.y * scale + window.innerHeight / 2;
     setTransform(targetX, targetY, scale, 500, 'easeOut');
   };
+
+  // Only key passenger stations along the Chengalpattu to Central line
+  const keyStations = CORRIDOR_STATIONS.filter(
+    (s) => !s.name.includes('Siding') && !s.name.includes('Outer')
+  );
 
   return (
     <>
@@ -118,19 +114,19 @@ const StationNavigatorControls = ({
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 max-w-[95vw] pointer-events-auto select-none font-mono">
         <div className="flex items-center gap-1.5 bg-white/95 p-1.5 rounded-2xl border border-slate-200 shadow-2xl backdrop-blur-md overflow-x-auto max-w-full no-scrollbar">
           <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider px-2 border-r border-slate-200 shrink-0">
-            CORRIDOR STATIONS
+            CGL ➔ MAS
           </div>
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {ALL_CORRIDOR_STATIONS.map((st) => (
+            {keyStations.map((st) => (
               <button
-                key={st.id}
+                key={st.code}
                 onClick={() => jumpTo(st)}
                 className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 ${
                   activeCode === st.code
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
-                title={`${st.name} - ${st.platforms} Platforms`}
+                title={`${st.name} (${st.code}) - ${st.platforms} Platforms`}
               >
                 {st.code}
               </button>
@@ -171,11 +167,11 @@ export const DigitalTwinMap = ({
   onToggleBlock,
   onSelectTrainForWimt
 }: DigitalTwinMapProps) => {
-  // Train arc distance tracking (initial offsets along corridor)
-  const [trainDistances, setTrainDistances] = useState<number[]>([18500, 12000, 7200, 3200]);
+  // Train distance tracking along corridor (Chengalpattu to Central is ~4663px)
+  const [trainDistances, setTrainDistances] = useState<number[]>([3800, 2600, 1400, 600]);
   const lastTimeRef = useRef<number>(performance.now());
 
-  // High-performance animation frame loop with smooth lookahead tangent (Zero Jitter)
+  // Smooth animation loop without angle jitter
   useEffect(() => {
     let animId: number;
 
@@ -186,9 +182,8 @@ export const DigitalTwinMap = ({
       setTrainDistances((prev) =>
         prev.map((d, i) => {
           const config = TRAIN_CONFIGS[i];
-          // Advance distance smoothly based on km/h and speed multiplier
-          // Canvas scale: ~22,000px corresponds to ~75 km
-          const pxPerSec = (config.speedKmH / 75) * 320 * speedMultiplier;
+          // Scale: 4663px for ~60km corridor
+          const pxPerSec = (config.speedKmH / 60) * 75 * speedMultiplier;
           return d + pxPerSec * dt;
         })
       );
@@ -200,47 +195,49 @@ export const DigitalTwinMap = ({
     return () => cancelAnimationFrame(animId);
   }, [speedMultiplier]);
 
-  // Compute articulated train states (each car bends along curves independently!)
+  // Articulated train state (each coach bends along track curve independently!)
   const articulatedTrains = useMemo(() => {
     return trainDistances.map((d, i) => {
+      // Train 0: Up Fast Track (diverts to suburban if blockActive)
+      const track =
+        i === 0
+          ? blockActive && d > 2000 && d < 2800
+            ? UP_SUBURBAN_TRACK
+            : UP_MAIN_TRACK
+          : i === 1
+          ? DOWN_MAIN_TRACK
+          : i === 2
+          ? UP_SUBURBAN_TRACK
+          : DOWN_SUBURBAN_TRACK;
+
       const isFreight = TRAIN_CONFIGS[i].type === 'freight';
       const coachCount = isFreight ? 5 : 4;
-      const spacing = isFreight ? 34 : 30;
-      return getArticulatedTrain(d, coachCount, spacing);
+      const spacing = isFreight ? 30 : 26;
+
+      return getArticulatedTrain(track, d, coachCount, spacing);
     });
-  }, [trainDistances]);
+  }, [trainDistances, blockActive]);
 
-  // Pre-generate SVG path strings for maximum rendering performance
-  const mainlineSvgPaths = useMemo(() => {
-    return SURVEYED_MAIN_TRACKS.map((t) => pointsToSvgPath(t.canvasPoints));
-  }, []);
+  // Pre-generate SVG path strings
+  const upMainPath = useMemo(() => trackToSvgPath(UP_MAIN_TRACK), []);
+  const downMainPath = useMemo(() => trackToSvgPath(DOWN_MAIN_TRACK), []);
+  const upSuburbanPath = useMemo(() => trackToSvgPath(UP_SUBURBAN_TRACK), []);
+  const downSuburbanPath = useMemo(() => trackToSvgPath(DOWN_SUBURBAN_TRACK), []);
 
-  const chetpetBranchSvgPaths = useMemo(() => {
-    return SURVEYED_CHETPET_BRANCHES.map((t) => pointsToSvgPath(t.canvasPoints));
-  }, []);
-
-  const turnoutSvgPaths = useMemo(() => {
-    return SURVEYED_TURNOUTS.map((t) => pointsToSvgPath(t.canvasPoints));
-  }, []);
-
-  const loopSvgPaths = useMemo(() => {
-    return SURVEYED_STATION_LOOPS.map((t) => pointsToSvgPath(t.canvasPoints));
-  }, []);
-
-  // Center initial view near Chetpet / Egmore / Central junction complex
-  const chetpetPt = projectGpsToCanvas(13.072, 80.252);
-  const startX = -chetpetPt.x * 0.65 + (typeof window !== 'undefined' ? window.innerWidth / 2 : 600);
-  const startY = -chetpetPt.y * 0.65 + (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
+  // Center initial view near Tambaram (index 12)
+  const tbm = CORRIDOR_STATIONS[12];
+  const startX = -tbm.x * 0.75 + (typeof window !== 'undefined' ? window.innerWidth / 2 : 600);
+  const startY = -tbm.y * 0.75 + (typeof window !== 'undefined' ? window.innerHeight / 2 : 400);
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-[#f8fafc] railway-cursor">
       <TransformWrapper
-        key="surveyed-digital-twin-wrapper"
-        initialScale={0.65}
+        key="clean-cgl-mas-wrapper"
+        initialScale={0.75}
         initialPositionX={startX}
         initialPositionY={startY}
-        minScale={0.2}
-        maxScale={4.5}
+        minScale={0.25}
+        maxScale={4.0}
         limitToBounds={false}
         wheel={{ step: 0.1 }}
         panning={{ velocityDisabled: true }}
@@ -248,163 +245,143 @@ export const DigitalTwinMap = ({
         <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
           <div
             className="relative bg-[#f8fafc]"
-            style={{ width: CANVAS_BOUNDS.width, height: CANVAS_BOUNDS.height }}
+            style={{ width: SCHEMATIC_BOUNDS.width, height: SCHEMATIC_BOUNDS.height }}
           >
-            {/* Engineering Grid (Clean railway blueprint background) */}
+            {/* Subtle Blueprint Grid (Matching real geographic orientation) */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
                 backgroundImage:
-                  'linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px)',
-                backgroundSize: '100px 100px'
+                  'linear-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.035) 1px, transparent 1px)',
+                backgroundSize: '120px 120px'
               }}
             />
 
-            {/* SVG Surveyed Railway Network */}
+            {/* SVG Track Infrastructure */}
             <svg
-              width={CANVAS_BOUNDS.width}
-              height={CANVAS_BOUNDS.height}
+              width={SCHEMATIC_BOUNDS.width}
+              height={SCHEMATIC_BOUNDS.height}
               className="block drop-shadow-sm"
             >
               <defs>
-                {/* Powerful Conical Headlight Beam */}
                 <linearGradient id="flexible-headlight-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#fef08a" stopOpacity="0.9" />
-                  <stop offset="40%" stopColor="#fde047" stopOpacity="0.4" />
+                  <stop offset="0%" stopColor="#fef08a" stopOpacity="0.95" />
+                  <stop offset="40%" stopColor="#fde047" stopOpacity="0.45" />
                   <stop offset="100%" stopColor="#facc15" stopOpacity="0" />
                 </linearGradient>
               </defs>
 
-              {/* 1. Track Ballast Bed (Dark stone base following surveyed curves) */}
-              <g id="ballast-beds" opacity="0.6">
-                {mainlineSvgPaths.map((d, i) => (
-                  <path key={`ballast-main-${i}`} d={d} stroke="#cbd5e1" strokeWidth="18" fill="none" strokeLinecap="round" />
-                ))}
-                {chetpetBranchSvgPaths.map((d, i) => (
-                  <path key={`ballast-chetpet-${i}`} d={d} stroke="#cbd5e1" strokeWidth="14" fill="none" strokeLinecap="round" />
-                ))}
-                {turnoutSvgPaths.map((d, i) => (
-                  <path key={`ballast-turnout-${i}`} d={d} stroke="#fde68a" strokeWidth="12" fill="none" strokeLinecap="round" />
-                ))}
-                {loopSvgPaths.map((d, i) => (
-                  <path key={`ballast-loop-${i}`} d={d} stroke="#e2e8f0" strokeWidth="12" fill="none" strokeLinecap="round" />
-                ))}
+              {/* 1. Stone Ballast Bed (Smooth gravel base following real satellite curves) */}
+              <g id="ballast-bed" opacity="0.6">
+                {/* Double Track from Chengalpattu to Tambaram */}
+                <path d={upMainPath} stroke="#cbd5e1" strokeWidth="22" fill="none" strokeLinecap="round" />
+                <path d={downMainPath} stroke="#cbd5e1" strokeWidth="22" fill="none" strokeLinecap="round" />
+
+                {/* Quadruple Track from Tambaram to Chennai Central */}
+                <path d={upSuburbanPath} stroke="#e2e8f0" strokeWidth="18" fill="none" strokeLinecap="round" />
+                <path d={downSuburbanPath} stroke="#e2e8f0" strokeWidth="18" fill="none" strokeLinecap="round" />
               </g>
 
               {/* 2. Concrete Sleepers (Ties) */}
-              <g id="track-sleepers" opacity="0.7">
-                {mainlineSvgPaths.map((d, i) => (
-                  <path key={`sleepers-main-${i}`} d={d} stroke="#64748b" strokeWidth="12" strokeDasharray="3 7" fill="none" />
-                ))}
-                {chetpetBranchSvgPaths.map((d, i) => (
-                  <path key={`sleepers-chetpet-${i}`} d={d} stroke="#64748b" strokeWidth="10" strokeDasharray="3 6" fill="none" />
-                ))}
+              <g id="concrete-sleepers" opacity="0.75">
+                <path d={upMainPath} stroke="#64748b" strokeWidth="14" strokeDasharray="3 7" fill="none" />
+                <path d={downMainPath} stroke="#64748b" strokeWidth="14" strokeDasharray="3 7" fill="none" />
+                <path d={upSuburbanPath} stroke="#64748b" strokeWidth="12" strokeDasharray="3 7" fill="none" />
+                <path d={downSuburbanPath} stroke="#64748b" strokeWidth="12" strokeDasharray="3 7" fill="none" />
               </g>
 
-              {/* 3. Real Steel Rails (Polished Double Rails) */}
+              {/* 3. Polished Steel Rails (Actual Number of Tracks) */}
               <g id="steel-rails">
-                {/* Mainline Rails (Deep Navy) */}
-                {mainlineSvgPaths.map((d, i) => (
-                  <g key={`rails-main-${i}`}>
-                    <path d={d} stroke="#0f172a" strokeWidth="4" fill="none" />
-                    <path d={d} stroke="#f8fafc" strokeWidth="2" fill="none" />
-                  </g>
-                ))}
+                {/* UP MAIN FAST LINE (Steel Navy & Silver) */}
+                <path d={upMainPath} stroke="#0f172a" strokeWidth="4.5" fill="none" />
+                <path d={upMainPath} stroke="#f8fafc" strokeWidth="2.5" fill="none" />
 
-                {/* All Branches North of Chetpet (Egmore, Central, Park, MMC, Beach) */}
-                {chetpetBranchSvgPaths.map((d, i) => (
-                  <g key={`rails-chetpet-${i}`}>
-                    <path d={d} stroke="#1e3a8a" strokeWidth="3.5" fill="none" />
-                    <path d={d} stroke="#93c5fd" strokeWidth="1.5" fill="none" />
-                  </g>
-                ))}
+                {/* DOWN MAIN FAST LINE */}
+                <path d={downMainPath} stroke="#0f172a" strokeWidth="4.5" fill="none" />
+                <path d={downMainPath} stroke="#f8fafc" strokeWidth="2.5" fill="none" />
 
-                {/* Real-World Crossover Turnouts (Vibrant Amber switches where lines merge!) */}
-                {turnoutSvgPaths.map((d, i) => (
-                  <path key={`rails-turnout-${i}`} d={d} stroke="#d97706" strokeWidth="3" fill="none" strokeDasharray="6 2" />
-                ))}
+                {/* UP SUBURBAN SLOW LINE (from Tambaram to Central) */}
+                <path d={upSuburbanPath} stroke="#0284c7" strokeWidth="3.5" fill="none" />
+                <path d={upSuburbanPath} stroke="#e0f2fe" strokeWidth="1.8" fill="none" />
 
-                {/* Station Platform Loops */}
-                {loopSvgPaths.map((d, i) => (
-                  <path key={`rails-loop-${i}`} d={d} stroke="#64748b" strokeWidth="2.5" fill="none" />
-                ))}
+                {/* DOWN SUBURBAN SLOW LINE (from Tambaram to Central) */}
+                <path d={downSuburbanPath} stroke="#0284c7" strokeWidth="3.5" fill="none" />
+                <path d={downSuburbanPath} stroke="#e0f2fe" strokeWidth="1.8" fill="none" />
               </g>
 
-              {/* 4. Active Maintenance Block Segment (with animated hazard stripes) */}
+              {/* 4. Active Maintenance Block between Tambaram & Chromepet */}
               {blockActive && (
                 <g className="animate-pulse">
-                  {/* Block between Tambaram (12.925) and Chromepet (12.951) */}
                   <rect
-                    x={projectGpsToCanvas(12.938, 80.129).x - 120}
-                    y={projectGpsToCanvas(12.938, 80.129).y - 40}
-                    width="240"
-                    height="80"
+                    x={CORRIDOR_STATIONS[12].x + 40}
+                    y={CORRIDOR_STATIONS[12].y - 35}
+                    width={CORRIDOR_STATIONS[14].x - CORRIDOR_STATIONS[12].x}
+                    height="70"
                     fill="#ef4444"
-                    fillOpacity="0.2"
+                    fillOpacity="0.25"
                     rx="12"
                     stroke="#dc2626"
                     strokeWidth="3"
                     strokeDasharray="8 6"
                   />
                   <text
-                    x={projectGpsToCanvas(12.938, 80.129).x}
-                    y={projectGpsToCanvas(12.938, 80.129).y + 5}
+                    x={(CORRIDOR_STATIONS[12].x + CORRIDOR_STATIONS[14].x) / 2}
+                    y={CORRIDOR_STATIONS[12].y + 5}
                     fill="#dc2626"
-                    fontSize="12"
+                    fontSize="11"
                     fontWeight="900"
                     textAnchor="middle"
                     className="font-mono tracking-wider"
                   >
-                    ⚠️ MAINTENANCE BLOCK: TBM ⇄ CMP
+                    ⚠️ MAINTENANCE BLOCK: TBM ⇄ CMP (AI DIVERSION ACTIVE)
                   </text>
                 </g>
               )}
 
-              {/* 5. Geographic Stations Placed at Real Surveyed Coordinates */}
-              {ALL_CORRIDOR_STATIONS.map((st) => {
-                const { x, y } = projectGpsToCanvas(st.lat, st.lng);
-                const isMajor = st.type === 'terminal' || st.type === 'junction';
+              {/* 5. Geographic Stations from Chengalpattu to Central */}
+              {CORRIDOR_STATIONS.map((st) => {
+                const isMajor = st.code === 'CGL' || st.code === 'TBM' || st.code === 'MS' || st.code === 'MAS';
 
                 return (
-                  <g key={st.id} className="select-none">
-                    {/* Platform Base Indicator */}
+                  <g key={st.code} className="select-none">
+                    {/* Platform Base Indicator Box */}
                     <rect
-                      x={x - 60}
-                      y={y - 18}
-                      width="120"
+                      x={st.x - 55}
+                      y={st.y - 18}
+                      width="110"
                       height="36"
                       fill="#ffffff"
                       stroke={isMajor ? '#1e3a8a' : '#cbd5e1'}
-                      strokeWidth="1.5"
+                      strokeWidth={isMajor ? '2' : '1.5'}
                       rx="10"
                       className="drop-shadow-sm"
                     />
 
-                    {/* Platform Count Badge */}
+                    {/* Platform Count Pill */}
                     <rect
-                      x={x - 52}
-                      y={y - 12}
-                      width="28"
+                      x={st.x - 48}
+                      y={st.y - 12}
+                      width="26"
                       height="24"
                       fill={isMajor ? '#1e3a8a' : '#f1f5f9'}
                       rx="6"
                     />
                     <text
-                      x={x - 38}
-                      y={y + 4}
+                      x={st.x - 35}
+                      y={st.y + 4}
                       fill={isMajor ? '#facc15' : '#475569'}
                       fontSize="9"
                       fontWeight="900"
                       textAnchor="middle"
                       className="font-mono"
                     >
-                      {st.platforms}P
+                      {st.platforms || st.pf || 4}P
                     </text>
 
                     {/* Station Code & Name */}
                     <text
-                      x={x - 18}
-                      y={y - 1}
+                      x={st.x - 16}
+                      y={st.y - 1}
                       fill="#0f172a"
                       fontSize="11"
                       fontWeight="900"
@@ -413,20 +390,20 @@ export const DigitalTwinMap = ({
                       {st.code}
                     </text>
                     <text
-                      x={x - 18}
-                      y={y + 11}
+                      x={st.x - 16}
+                      y={st.y + 11}
                       fill="#64748b"
                       fontSize="8"
                       fontWeight="700"
                       className="font-mono truncate"
                     >
-                      {st.name.slice(0, 11)}
+                      {st.name.slice(0, 10)}
                     </text>
                   </g>
                 );
               })}
 
-              {/* 6. Flexible Articulated Multi-Coach Trains (Bending along real curves with ZERO jitter!) */}
+              {/* 6. Flexible Multi-Coach Trains Bending Along Curves */}
               {articulatedTrains.map((trainState, idx) => {
                 const config = TRAIN_CONFIGS[idx];
                 return (
@@ -446,7 +423,7 @@ export const DigitalTwinMap = ({
           </div>
         </TransformComponent>
 
-        {/* Station Navigation Controls & Block Injector */}
+        {/* Station Navigation Controls */}
         <StationNavigatorControls
           blockActive={blockActive}
           onToggleBlock={onToggleBlock}
