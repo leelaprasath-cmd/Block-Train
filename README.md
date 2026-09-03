@@ -28,12 +28,18 @@ Currently, authorizing a railway maintenance "block" requires a staggering amoun
 
 ## ✨ Platform Capabilities
 
-### 🗺️ 1. Interactive Vector Corridor Digital Twin
-- **Suburban Chennai Main Corridor**: Full model covering **Tambaram (TBM) ⇄ Chromepet (CMP) ⇄ Pallavaram (PV) ⇄ St. Thomas Mount (STM) ⇄ Guindy (GDY) ⇄ Chennai Central / Egmore (MAS)**.
-- **Multi-Lane Track Infrastructure**: Up Main, Down Main, Fast Express Corridors, Platform Loops, and Yard sidings.
-- **Real-Time Moving Train Physics**: Vande Bharat Express (130 km/h), Superfast rakes, Suburban EMUs, and Concor Freights with live position interpolation, direction chevrons, and speed tags.
-- **Dynamic 4-Aspect Signals**: Automatic Block Signaling (Green, Double Yellow, Yellow, Red) updated dynamically.
-- **One-Click Track Block Toggling**: Click any track segment on the canvas to simulate a maintenance closure and watch the AI dynamically reroute oncoming trains!
+### 🛰️ 1. Real-World Satellite GIS Track Twin (Google Maps Platform)
+- **High-Resolution Satellite Earth Imagery**: Powered by Google Maps Platform Satellite/Hybrid imagery, displaying real physical tracks, overhead catenary gantries, station platforms, and geographical terrain.
+- **Accurate GPS Track Alignment**: True railway coordinates for the Southern Railway Mainline (**Chengalpattu ⇄ Tambaram ⇄ Guindy ⇄ Chennai Egmore ⇄ Chennai Central**).
+- **Multi-Track Infrastructure**: Parallel polylines for Up Main Line, Down Main Line, and Fast Express Line with real railway curvature.
+- **Live Moving GPS Trains**: Vande Bharat Express (130 km/h), Pandian Superfast Express (110 km/h), Suburban EMUs, and CONCOR Freight rakes navigating along actual real-world track curves.
+- **Dynamic AI Diversion**: Inject maintenance blocks on live tracks and watch oncoming trains dynamically divert onto parallel loops in real time!
+- **Interactive Telemetry HUD**: Click any moving train or station pin to inspect live telemetry, GPS coordinates, heading bearing, and Kavach TCAS radio links.
+
+### 📐 2. Authentic Vector Schematic Digital Twin
+- Interactive canvas with smooth pan & zoom powered by `react-zoom-pan-pinch`.
+- Detailed station layouts, platform numbers (`PF-1`, `PF-2`...), throat curves, and mechanical switch frogs.
+- Dynamic station approach physics with automatic deceleration, passenger dwell stop times, and acceleration.
 
 ### ⚡ 2. AI Maintenance Block Planner & Cascading Delay Solver
 - Multi-constraint scheduler calculating the optimal maintenance window with minimal passenger impact.
