@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
 import { REAL_TRACK_WAYPOINTS, REAL_STATIONS, GeoStation } from '../../data/realTracksData';
 import { useRealGpsTrains, ActiveGpsTrain } from '../../lib/hooks/useRealGpsTrains';
-import { Construction, AlertTriangle, CheckCircle2, Navigation2 } from 'lucide-react';
+import { Construction, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { RealisticTrainRake } from '../train/RealisticTrainRake';
 
 interface ExtractedRealTrackCanvasProps {
   speedMultiplier: number;
@@ -232,6 +233,56 @@ export const ExtractedRealTrackCanvas = ({
                   <stop offset="0%" stopColor="#f59e0b" />
                   <stop offset="100%" stopColor="#d97706" />
                 </linearGradient>
+                {/* Conical Headlight Beam */}
+                <linearGradient id="headlight-cone-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#fef08a" stopOpacity="0.8" />
+                  <stop offset="35%" stopColor="#fde047" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#facc15" stopOpacity="0" />
+                </linearGradient>
+                {/* Vande Bharat (Trainset 18) Gradients */}
+                <linearGradient id="vb-loco-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="35%" stopColor="#e2e8f0" />
+                  <stop offset="70%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#1e3a8a" />
+                </linearGradient>
+                <linearGradient id="vb-coach-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#f8fafc" />
+                  <stop offset="25%" stopColor="#ffffff" />
+                  <stop offset="50%" stopColor="#1d4ed8" />
+                  <stop offset="75%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#f1f5f9" />
+                </linearGradient>
+                {/* LHB Superfast (Pandian) Gradients */}
+                <linearGradient id="lhb-loco-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#f87171" />
+                  <stop offset="50%" stopColor="#dc2626" />
+                  <stop offset="100%" stopColor="#991b1b" />
+                </linearGradient>
+                <linearGradient id="lhb-coach-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#ef4444" />
+                  <stop offset="45%" stopColor="#b91c1c" />
+                  <stop offset="55%" stopColor="#94a3b8" />
+                  <stop offset="100%" stopColor="#64748b" />
+                </linearGradient>
+                {/* Suburban EMU Gradients */}
+                <linearGradient id="emu-loco-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#38bdf8" />
+                  <stop offset="50%" stopColor="#0284c7" />
+                  <stop offset="100%" stopColor="#0369a1" />
+                </linearGradient>
+                <linearGradient id="emu-coach-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#0284c7" />
+                  <stop offset="50%" stopColor="#0369a1" />
+                  <stop offset="75%" stopColor="#fef08a" />
+                  <stop offset="100%" stopColor="#0284c7" />
+                </linearGradient>
+                {/* Heavy Freight WAG-9 Gradients */}
+                <linearGradient id="freight-loco-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#4ade80" />
+                  <stop offset="50%" stopColor="#16a34a" />
+                  <stop offset="100%" stopColor="#14532d" />
+                </linearGradient>
               </defs>
 
               {/* Ballast Beds (Stone trackbed following real curves) */}
@@ -357,7 +408,7 @@ export const ExtractedRealTrackCanvas = ({
                 );
               })}
 
-              {/* Moving Trains along the Real Extracted Tracks */}
+              {/* Moving Realistic Trains along the Real Extracted Tracks */}
               {trains.map((train) => {
                 const { x, y } = projectToCanvas(train.position.lat, train.position.lng);
 
@@ -368,49 +419,11 @@ export const ExtractedRealTrackCanvas = ({
                       transform: `translate(${x}px, ${y}px)`,
                       willChange: 'transform'
                     }}
-                    onClick={() => onSelectTrainForWimt(train)}
-                    className="cursor-pointer group"
                   >
-                    {/* Pulsing Radar Ring */}
-                    <circle r="22" fill={train.color} opacity="0.2" className="animate-ping" />
-
-                    {/* Drop shadow */}
-                    <rect x="-40" y="-18" width="80" height="36" fill="rgba(0,0,0,0.15)" rx="10" />
-
-                    {/* Train Container Card */}
-                    <rect
-                      x="-38"
-                      y="-16"
-                      width="76"
-                      height="32"
-                      fill="#ffffff"
-                      stroke={train.color}
-                      strokeWidth="2"
-                      rx="10"
-                      className="drop-shadow-md group-hover:scale-110 transition-transform"
+                    <RealisticTrainRake
+                      train={train}
+                      onClick={() => onSelectTrainForWimt(train)}
                     />
-
-                    {/* Train Icon & Direction Chevron */}
-                    <g transform={`translate(-22, 0) rotate(${train.bearing})`}>
-                      <circle r="9" fill={train.color} />
-                      <Navigation2 className="w-3.5 h-3.5 text-white -translate-x-1.5 -translate-y-1.5 fill-current" />
-                    </g>
-
-                    {/* Train Number & Speed Text */}
-                    <text x="6" y="-3" fill="#0f172a" fontSize="10" fontWeight="900" className="font-mono">
-                      #{train.id}
-                    </text>
-                    <text x="6" y="9" fill={train.color} fontSize="9" fontWeight="800" className="font-mono">
-                      {train.currentSpeedKmH} km/h
-                    </text>
-
-                    {/* Tooltip on Hover */}
-                    <g className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <rect x="-80" y="-45" width="160" height="22" fill="#0f172a" rx="6" />
-                      <text x="0" y="-31" fill="#ffffff" fontSize="9" textAnchor="middle" fontWeight="700" className="font-mono">
-                        {train.name} • CLICK TO TRACK
-                      </text>
-                    </g>
                   </g>
                 );
               })}
