@@ -33,7 +33,7 @@ function AppContent() {
   };
 
   return (
-    <div className="w-full h-screen bg-[#060a15] overflow-hidden relative font-sans text-slate-100 selection:bg-blue-500/20 select-none railway-cursor">
+    <div className="w-full h-screen bg-slate-50 overflow-hidden relative font-sans text-slate-900 selection:bg-blue-500/20 select-none railway-cursor">
       {/* 1. Top Executive OCC Operations Command Bar */}
       <UnifiedOCCHeader
         simulatedTime={time}
@@ -49,7 +49,7 @@ function AppContent() {
       />
 
       {/* 2. Primary Real-World Map Viewport (Fills screen below the 64px header) */}
-      <main className="w-full h-[calc(100vh-64px)] mt-16 relative">
+      <main className="w-full h-[calc(100vh-64px)] mt-16 relative bg-slate-100">
         {mode === 'satellite' ? (
           <RealSatelliteMap
             speedMultiplier={speedMultiplier}
@@ -67,7 +67,7 @@ function AppContent() {
 
       {/* 3. Full-Screen AI Block Planner Overlay (Neon DB + Google OR-Tools) */}
       {plannerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
           <AIBlockPlanner
             onBlockAuthorized={handleBlockAuthorized}
             onClose={() => setPlannerOpen(false)}

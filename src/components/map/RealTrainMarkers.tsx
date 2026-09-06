@@ -56,22 +56,22 @@ export const RealTrainMarkers = ({
               {/* Floating Train Tag Anchored Directly Above the Puck (Does NOT pull train sideways!) */}
               <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 pointer-events-none whitespace-nowrap z-30">
                 <div
-                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold shadow-2xl backdrop-blur-md flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold shadow-xl backdrop-blur-md flex items-center gap-1.5 transition-all ${
                     isSelected
-                      ? 'bg-slate-950/95 text-white border-cyan-400 ring-2 ring-cyan-400/50 shadow-cyan-500/30'
-                      : 'bg-slate-950/90 text-slate-100 border-slate-700/80 group-hover:border-cyan-400'
+                      ? 'bg-white text-slate-900 border-blue-600 ring-2 ring-blue-500/40 shadow-blue-500/20'
+                      : 'bg-white/95 text-slate-800 border-slate-200 group-hover:border-blue-400'
                   }`}
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0 animate-pulse"
                     style={{ backgroundColor: train.color }}
                   />
-                  <span className="font-extrabold text-white">#{train.id}</span>
-                  <span className="text-emerald-400 font-semibold">
+                  <span className="font-extrabold text-slate-900">#{train.id}</span>
+                  <span className="text-emerald-700 font-bold">
                     {train.currentSpeedKmH} km/h
                   </span>
                   {train.isDiverted && (
-                    <span className="px-1 py-0.2 rounded text-[8px] bg-amber-500/20 text-amber-300 font-bold border border-amber-400/40 animate-pulse">
+                    <span className="px-1 py-0.2 rounded text-[8px] bg-amber-100 text-amber-900 font-bold border border-amber-300 animate-pulse">
                       DIVERTED
                     </span>
                   )}
