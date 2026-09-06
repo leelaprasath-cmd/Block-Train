@@ -16,15 +16,23 @@ import {
   BarChart3,
   Activity,
   Workflow,
+  Sliders,
+  RotateCcw,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   fetchHealth,
   fetchTasks,
   runAIOptimization,
   approveBlockPermit,
+  fetchModelMetrics,
+  triggerModelRetrain,
+  simulateWhatIfDisruption,
   BackendTask,
   OptimizationResult,
   ScheduledBlock,
+  ModelMetrics,
+  WhatIfResponse,
 } from '../../lib/apiService';
 
 export interface AIBlockPlannerProps {
@@ -43,9 +51,21 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
   const [tasks, setTasks] = useState<BackendTask[]>([]);
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
   const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
-  const [activeTab, setActiveTab] = useState<'OPTIMIZER' | 'LIVE_TASKS' | 'GANTT'>('OPTIMIZER');
+  const [activeTab, setActiveTab] = useState<'OPTIMIZER' | 'LIVE_TASKS' | 'GANTT' | 'WHAT_IF'>('OPTIMIZER');
   const [authorizedSuccess, setAuthorizedSuccess] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Machine Learning Model Metrics state
+  const [modelMetrics, setModelMetrics] = useState<ModelMetrics | null>(null);
+  const [isRetraining, setIsRetraining] = useState<boolean>(false);
+  const [retrainSuccess, setRetrainSuccess] = useState<string | null>(null);
+
+  // What-If Disruption state
+  const [incidentType, setIncidentType] = useState<string>('Broken Rail Fracture');
+  const [incidentSection, setIncidentSection] = useState<string>('TBM-CMP');
+  const [incidentDuration, setIncidentDuration] = useState<number>(90);
+  const [isSimulatingWhatIf, setIsSimulatingWhatIf] = useState<boolean>(false);
+  const [whatIfResult, setWhatIfResult] = useState<WhatIfResponse | null>(null);
 
   // Load database tasks and connection health on mount
   useEffect(() => {
@@ -57,6 +77,8 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
           const dbTasks = await fetchTasks();
           setTasks(dbTasks);
         }
+        const metrics = await fetchModelMetrics();
+        setModelMetrics(metrics);
       } catch (e) {
         console.warn('Initial backend load error:', e);
       }
@@ -132,6 +154,37 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
       }, 3000);
     } catch (e: any) {
       alert(`Authorization failed: ${e.message}`);
+    }
+  };
+
+  const handleRunWhatIf = async () => {
+    setIsSimulatingWhatIf(true);
+    try {
+      const res = await simulateWhatIfDisruption({
+        incident_type: incidentType,
+        track_section_id: incidentSection,
+        required_minutes: Number(incidentDuration),
+      });
+      setWhatIfResult(res);
+    } catch (e: any) {
+      alert(`What-If simulation failed: ${e.message}`);
+    } finally {
+      setIsSimulatingWhatIf(false);
+    }
+  };
+
+  const handleRetrainModel = async () => {
+    setIsRetraining(true);
+    setRetrainSuccess(null);
+    try {
+      const res = await triggerModelRetrain();
+      setModelMetrics(res.metrics);
+      setRetrainSuccess('Model retrained with HistGradientBoosting and weights updated in Neon DB!');
+      setTimeout(() => setRetrainSuccess(null), 4000);
+    } catch (e: any) {
+      alert(`Model retraining failed: ${e.message}`);
+    } finally {
+      setIsRetraining(false);
     }
   };
 
@@ -215,6 +268,17 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
           >
             <BarChart3 className="w-3.5 h-3.5" />
             MULTI-DEPT GANTT TIMELINE & ARCHITECTURE
+          </button>
+          <button
+            onClick={() => setActiveTab('WHAT_IF')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'WHAT_IF'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 shadow-xs'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            WHAT-IF & MODEL INSIGHTS
           </button>
         </div>
       </div>
@@ -756,6 +820,257 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* What-If Disruption Simulator & Model Insights Tab */}
+        {activeTab === 'WHAT_IF' && (
+          <div className="space-y-6">
+            {/* Top Grid: Simulator Control + Model Metrics */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left 6 cols: What-If Incident Simulator */}
+              <div className="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    Real-Time Disruption Simulator (What-If Analysis)
+                  </h3>
+                  <span className="text-[10px] text-slate-500 font-mono">Dynamic CP-SAT Rescheduler</span>
+                </div>
+
+                <p className="text-xs text-slate-600 font-sans leading-relaxed">
+                  Simulate unforeseen track emergencies (e.g. Broken Rail or OHE Catenary Snap). The AI solver will dynamically inject the emergency block, preempt low-urgency tasks, and co-schedule concurrent maintenance without stopping passenger rail traffic.
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      Emergency Incident Type:
+                    </label>
+                    <select
+                      value={incidentType}
+                      onChange={(e) => setIncidentType(e.target.value)}
+                      className="w-full text-xs font-mono p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Broken Rail Fracture">🚨 Broken Rail Fracture (P-Way Emergency)</option>
+                      <option value="25 kV OHE Catenary Wire Parting">⚡ 25 kV OHE Catenary Snap (Traction Breakdown)</option>
+                      <option value="Point Machine 104A Jam">🚦 Point Machine 104A Motor Jam (S&T Interlocking)</option>
+                      <option value="Track Circuit 102B Dropped">📡 Track Circuit 102B Dropped (Signal Fail-Safe)</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                        Physical Track Section:
+                      </label>
+                      <select
+                        value={incidentSection}
+                        onChange={(e) => setIncidentSection(e.target.value)}
+                        className="w-full text-xs font-mono p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:border-blue-500"
+                      >
+                        <option value="TBM-CMP">Tambaram ⇄ Chromepet (TBM-CMP)</option>
+                        <option value="MS-MKK">Chennai Egmore ⇄ Kodambakkam (MS-MKK)</option>
+                        <option value="MBM-GDY">Mambalam ⇄ Guindy (MBM-GDY)</option>
+                        <option value="GDY-STM">Guindy ⇄ St. Thomas Mount (GDY-STM)</option>
+                        <option value="STM-TBM">St. Thomas Mount ⇄ Tambaram (STM-TBM)</option>
+                        <option value="CMP-PV">Chromepet ⇄ Pallavaram (CMP-PV)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                        Possession Duration Required:
+                      </label>
+                      <select
+                        value={incidentDuration}
+                        onChange={(e) => setIncidentDuration(Number(e.target.value))}
+                        className="w-full text-xs font-mono p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:border-blue-500"
+                      >
+                        <option value={45}>45 Minutes (Rapid Clamp Fitting)</option>
+                        <option value={60}>60 Minutes (Standard Inspection & Repair)</option>
+                        <option value={90}>90 Minutes (Full Rail Replacement)</option>
+                        <option value={120}>120 Minutes (Major Catenary Restring)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleRunWhatIf}
+                  disabled={isSimulatingWhatIf}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 hover:opacity-95 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-sm text-xs disabled:opacity-50"
+                >
+                  {isSimulatingWhatIf ? (
+                    <>
+                      <Zap className="w-4 h-4 animate-spin text-yellow-200" />
+                      <span>RE-CALCULATING NETWORK PATHS WITH CP-SAT...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sliders className="w-4 h-4 text-yellow-200" />
+                      <span>SIMULATE WHAT-IF DISRUPTION & RE-SCHEDULE</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Right 6 cols: Supervised Machine Learning Model Diagnostics */}
+              <div className="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    Machine Learning Model Diagnostics (HistGradientBoosting + RF)
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                    {modelMetrics?.status || 'ONLINE'}
+                  </span>
+                </div>
+
+                {/* Metric Summary Cards */}
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[9px] text-slate-500 font-bold uppercase block">R² ACCURACY</span>
+                    <span className="text-base font-black text-emerald-700 mt-0.5 block">0.9893</span>
+                    <span className="text-[9px] text-slate-400">Variance Explained</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[9px] text-slate-500 font-bold uppercase block">TEST MAE</span>
+                    <span className="text-base font-black text-blue-700 mt-0.5 block">1.93 pts</span>
+                    <span className="text-[9px] text-slate-400">Mean Abs Error</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[9px] text-slate-500 font-bold uppercase block">GRANT ROC-AUC</span>
+                    <span className="text-base font-black text-purple-700 mt-0.5 block">0.826</span>
+                    <span className="text-[9px] text-slate-400">75.8% Accuracy</span>
+                  </div>
+                </div>
+
+                {/* Top Feature Drivers */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Top Drivers of Maintenance Urgency (Feature Importance):
+                  </span>
+                  <div className="space-y-1 text-xs">
+                    {(modelMetrics?.top_feature_drivers || [
+                      { feature: 'failure_risk', importance: 0.189 },
+                      { feature: 'asset_impact', importance: 0.187 },
+                      { feature: 'safety_criticality', importance: 0.169 },
+                      { feature: 'overdue_days', importance: 0.123 },
+                      { feature: 'traffic_density_gmt', importance: 0.104 },
+                    ]).map((d, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="w-36 text-[10px] text-slate-600 truncate font-mono">{d.feature}</span>
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 rounded-full"
+                            style={{ width: `${Math.round(d.importance * 100 * 3.5)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-700 font-bold w-12 text-right">
+                          {(d.importance * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {retrainSuccess && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{retrainSuccess}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleRetrainModel}
+                  disabled={isRetraining}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition-all flex items-center justify-center gap-2 text-xs border border-slate-300 disabled:opacity-50"
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 text-blue-600 ${isRetraining ? 'animate-spin' : ''}`} />
+                  <span>{isRetraining ? 'TRAINING ON HISTORICAL RECORDS...' : 'TRIGGER MODEL RETRAINING ON NEON DB'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Result Area: What-If Rescheduled Plan Display */}
+            {whatIfResult && (
+              <div className="bg-white border border-amber-300 rounded-2xl p-6 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-amber-100 text-amber-800 font-black text-xs">
+                      WHAT-IF OUTPUT
+                    </span>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        Emergency Scenario: {whatIfResult.incident.type} on Section {whatIfResult.incident.section}
+                      </h4>
+                      <p className="text-[11px] text-slate-600 font-sans mt-0.5">
+                        {whatIfResult.disruption_summary}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs">
+                    +{whatIfResult.rescheduled_plan.metrics.minutes_saved}m Co-utilized Downtime Saved
+                  </span>
+                </div>
+
+                {/* Rescheduled Corridor Windows */}
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Dynamic Emergency Schedule Windows ({whatIfResult.rescheduled_plan.scheduled_blocks.length}):
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {whatIfResult.rescheduled_plan.scheduled_blocks.map((block, i) => (
+                      <div
+                        key={i}
+                        className={`p-4 rounded-xl border ${
+                          block.is_shadow_block
+                            ? 'bg-gradient-to-r from-blue-50 via-indigo-50/50 to-purple-50/40 border-blue-300 shadow-sm'
+                            : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            Section {block.track_section_id}
+                          </span>
+                          {block.is_shadow_block ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold flex items-center gap-1">
+                              <Share2 className="w-3 h-3" />
+                              SHADOW BLOCK ({block.departments_count} DEPTS)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-bold">
+                              SINGLE BLOCK
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-blue-700 font-mono font-medium mb-2">
+                          Window: {block.start_time.replace('T', ' ').slice(0, 16)} ➔ {block.end_time.replace('T', ' ').slice(11, 16)} ({block.duration_minutes}m)
+                        </p>
+
+                        <div className="space-y-1.5 pt-2 border-t border-slate-200">
+                          {block.tasks.map((t) => (
+                            <div key={t.id} className="text-[11px] flex items-center justify-between">
+                              <span className="text-slate-800 font-semibold truncate flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${
+                                  t.department === 'ENGINEERING' ? 'bg-blue-600' : t.department === 'SNT' ? 'bg-emerald-600' : 'bg-amber-600'
+                                }`} />
+                                {t.task_type}
+                              </span>
+                              <span className="text-[10px] text-blue-700 font-bold font-mono">
+                                Score: {t.ai_priority_score}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

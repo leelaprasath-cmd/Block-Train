@@ -1,0 +1,58 @@
+{
+  "status": "TRAINED",
+  "best_regression_model": "HistGradientBoosting",
+  "regression_metrics": {
+    "Ridge Baseline": {
+      "MAE": 1.979,
+      "RMSE": 2.809,
+      "R2": 0.9871
+    },
+    "Random Forest Regressor": {
+      "MAE": 2.337,
+      "RMSE": 3.147,
+      "R2": 0.9839
+    },
+    "HistGradientBoosting": {
+      "MAE": 1.931,
+      "RMSE": 2.567,
+      "R2": 0.9893
+    }
+  },
+  "classification_metrics": {
+    "model": "Random Forest Classifier",
+    "accuracy": 0.7583,
+    "roc_auc": 0.8255
+  },
+  "top_feature_drivers": [
+    {
+      "feature": "failure_risk",
+      "importance": 0.189
+    },
+    {
+      "feature": "asset_impact",
+      "importance": 0.1869
+    },
+    {
+      "feature": "safety_criticality",
+      "importance": 0.169
+    },
+    {
+      "feature": "overdue_days",
+      "importance": 0.123
+    },
+    {
+      "feature": "traffic_density_gmt",
+      "importance": 0.1045
+    },
+    {
+      "feature": "required_duration_minutes",
+      "importance": 0.0398
+    },
+    {
+      "feature": "severity_HIGH",
+      "importance": 0.0321
+    }
+  ],
+  "total_training_samples": 600,
+  "test_samples": 120
+}

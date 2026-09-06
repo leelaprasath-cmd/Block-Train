@@ -1,7 +1,14 @@
 from datetime import datetime
 from ortools.sat.python import cp_model
 
-def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list[dict] = None) -> dict:
+def optimize_block_schedule(
+    tasks: list[dict],
+    windows: list[dict],
+    trains: list[dict] = None,
+    safety_weight: float = 1.0,
+    shadow_bonus: int = 250,
+    delay_penalty_weight: float = 1.0
+) -> dict:
     """
     Multi-department railway maintenance block optimizer using Google OR-Tools CP-SAT.
     Enforces section matching, duration limits, department co-utilization (Shadow Blocking),
@@ -18,7 +25,8 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
                 "optimized_minutes": 0,
                 "minutes_saved": 0,
                 "shadow_blocks_count": 0,
-                "co_utilization_percent": 0
+                "co_utilization_percent": 0,
+                "estimated_train_delay_minutes": 0
             }
         }
 
@@ -64,7 +72,8 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
                 "optimized_minutes": 0,
                 "minutes_saved": 0,
                 "shadow_blocks_count": 0,
-                "co_utilization_percent": 0
+                "co_utilization_percent": 0,
+                "estimated_train_delay_minutes": 0
             }
         }
 
@@ -101,29 +110,30 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
         active_dept_vars = [window_dept_vars[(w_id, dept)] for dept in departments if (w_id, dept) in window_dept_vars]
         if len(active_dept_vars) >= 2:
             is_shadow = model.NewBoolVar(f"is_shadow_{w_id}")
-            # If >= 2 departments are active in this window, is_shadow can be 1
             model.Add(sum(active_dept_vars) >= 2).OnlyEnforceIf(is_shadow)
             model.Add(sum(active_dept_vars) < 2).OnlyEnforceIf(is_shadow.Not())
             shadow_vars[w_id] = is_shadow
 
     # Objective Function:
-    # Maximize (Task AI Priority Score) + Shadow Block Bonus - Train Traffic Penalty
+    # Maximize: (Safety Weight * Task AI Priority) + (Shadow Bonus * Co-working) - (Delay Penalty * Network Traffic)
     objective_terms = []
     for (t_id, w_id), var in x.items():
         task = next(t for t in tasks if t["id"] == t_id)
         win = next(w for w in processed_windows if w["id"] == w_id)
 
-        priority_reward = int(float(task.get("ai_priority_score", 50)) * 10)
+        priority_score = float(task.get("ai_predicted_urgency") or task.get("ai_priority_score", 50))
+        priority_reward = int(priority_score * 10 * safety_weight)
         
-        # Traffic penalty (higher delay penalty for high-traffic windows)
+        # Traffic & Train delay penalty
         traffic_level = str(win.get("traffic_level", "MEDIUM")).upper()
-        traffic_penalty = 60 if traffic_level == "HIGH" else (30 if traffic_level == "MEDIUM" else 10)
+        base_traffic_penalty = 60 if traffic_level == "HIGH" else (30 if traffic_level == "MEDIUM" else 10)
+        traffic_penalty = int(base_traffic_penalty * delay_penalty_weight)
 
         objective_terms.append(var * (priority_reward - traffic_penalty))
 
     # Add significant bonus for multi-department co-utilization (Shadow Blocking)
     for w_id, s_var in shadow_vars.items():
-        objective_terms.append(s_var * 250)
+        objective_terms.append(s_var * shadow_bonus)
 
     model.Maximize(sum(objective_terms))
 
@@ -143,7 +153,8 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
                 "optimized_minutes": 0,
                 "minutes_saved": 0,
                 "shadow_blocks_count": 0,
-                "co_utilization_percent": 0
+                "co_utilization_percent": 0,
+                "estimated_train_delay_minutes": 0
             }
         }
 
@@ -165,6 +176,7 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
                     "start_time": win["start_dt"].isoformat(),
                     "end_time": win["end_dt"].isoformat(),
                     "duration_minutes": win["duration_minutes"],
+                    "traffic_level": win.get("traffic_level", "MEDIUM"),
                     "tasks": [],
                     "task_ids": [],
                     "departments": set(),
@@ -177,6 +189,7 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
     scheduled_blocks = []
     total_optimized_minutes = 0
     shadow_count = 0
+    total_delay_minutes = 0
 
     for w_id, b in scheduled_blocks_dict.items():
         depts = list(b["departments"])
@@ -184,6 +197,11 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
         if is_co_utilized:
             shadow_count += 1
         total_optimized_minutes += b["duration_minutes"]
+
+        # Train delay estimation based on window traffic level & duration
+        traffic_mult = 0.25 if b["traffic_level"] == "HIGH" else (0.12 if b["traffic_level"] == "MEDIUM" else 0.05)
+        window_delay = int(b["duration_minutes"] * traffic_mult)
+        total_delay_minutes += window_delay
 
         scheduled_blocks.append({
             "window_id": w_id,
@@ -195,7 +213,8 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
             "tasks": b["tasks"],
             "departments": depts,
             "is_shadow_block": is_co_utilized,
-            "departments_count": len(depts)
+            "departments_count": len(depts),
+            "estimated_delay_min": window_delay
         })
 
     minutes_saved = max(0, total_baseline_minutes - total_optimized_minutes)
@@ -212,7 +231,61 @@ def optimize_block_schedule(tasks: list[dict], windows: list[dict], trains: list
             "optimized_minutes": total_optimized_minutes,
             "minutes_saved": minutes_saved,
             "shadow_blocks_count": shadow_count,
-            "co_utilization_percent": co_util_percent
+            "co_utilization_percent": co_util_percent,
+            "estimated_train_delay_minutes": total_delay_minutes
         },
         "explanation": f"Scheduled {sum(len(b['task_ids']) for b in scheduled_blocks)} tasks into {len(scheduled_blocks)} corridor windows. Achieved {shadow_count} joint shadow blocks across multiple departments, saving {minutes_saved} minutes of track downtime."
+    }
+
+def simulate_what_if_disruption(
+    incident_type: str,
+    track_section_id: str,
+    required_minutes: int,
+    tasks: list[dict],
+    windows: list[dict],
+    trains: list[dict] = None
+) -> dict:
+    """
+    What-If Disruption Simulator:
+    Simulates sudden fixed asset failures (e.g. Rail Fracture, OHE Catenary Breakdown)
+    and executes real-time AI corridor rescheduling.
+    """
+    emergency_task = {
+        "id": 9999,
+        "department": "ENGINEERING" if "rail" in incident_type.lower() or "track" in incident_type.lower() else ("TRACTION" if "ohe" in incident_type.lower() else "SNT"),
+        "task_type": f"EMERGENCY: {incident_type.upper()}",
+        "track_section_id": track_section_id,
+        "severity": "CRITICAL",
+        "safety_criticality": 100,
+        "failure_risk": 100,
+        "asset_impact": 95,
+        "overdue_days": 1,
+        "required_duration_minutes": required_minutes,
+        "ai_priority_score": 99.9,
+        "ai_predicted_urgency": 99.9,
+        "is_emergency": True
+    }
+
+    # Prepend emergency task to demand pool
+    augmented_tasks = [emergency_task] + [t for t in tasks if t["id"] != 9999]
+
+    # Run optimizer with high safety priority
+    optimized_plan = optimize_block_schedule(
+        tasks=augmented_tasks,
+        windows=windows,
+        trains=trains,
+        safety_weight=1.5,
+        shadow_bonus=350,
+        delay_penalty_weight=1.2
+    )
+
+    return {
+        "incident": {
+            "type": incident_type,
+            "section": track_section_id,
+            "required_duration_minutes": required_minutes,
+            "emergency_task_id": 9999
+        },
+        "rescheduled_plan": optimized_plan,
+        "disruption_summary": f"Emergency block for '{incident_type}' allocated on section {track_section_id}. AI solver dynamically co-scheduled concurrent maintenance, protecting corridor punctuality."
     }

@@ -16,12 +16,12 @@ from database import (
     approve_block,
 )
 from ml_prioritizer import prioritizer
-from optimizer import optimize_block_schedule
+from optimizer import optimize_block_schedule, simulate_what_if_disruption
 
 app = FastAPI(
     title="BlockTrain AI Autonomous Maintenance Block Planning Engine",
     description="Smart India Hackathon SIH26027: Multi-Department Track, Signal & OHE Block Optimizer with Neon PostgreSQL",
-    version="1.0.0"
+    version="1.1.0"
 )
 
 # Enable CORS for frontend Vite dev server
@@ -41,15 +41,47 @@ class ApproveBlockRequest(BaseModel):
     to_time: str
     urgency: Optional[str] = "High"
 
+class WhatIfRequest(BaseModel):
+    incident_type: str = "Rail Fracture"
+    track_section_id: str = "TBM-CMP"
+    required_minutes: int = 90
+
 @app.get("/api/health")
 def health_check():
     db_ok = test_db()
+    metrics = prioritizer.get_metrics()
     return {
         "status": "online" if db_ok else "degraded",
         "database_connected": db_ok,
-        "engine": "Google OR-Tools CP-SAT + Scikit-Learn ML Prioritizer",
-        "zone": "Southern Railway (MAS Division)"
+        "engine": "Google OR-Tools CP-SAT + HistGradientBoosting ML Prioritizer",
+        "zone": "Southern Railway (MAS Division)",
+        "model_status": metrics.get("status", "ACTIVE")
     }
+
+@app.get("/api/model/metrics")
+def get_ml_metrics():
+    """
+    Returns live Machine Learning training benchmarks, validation R2, MAE,
+    and feature importance distributions.
+    """
+    try:
+        return {"success": True, "metrics": prioritizer.get_metrics()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/model/train")
+def trigger_model_retraining():
+    """
+    Executes the complete machine learning training pipeline, saves updated
+    joblib weights, and reloads the inference engine.
+    """
+    try:
+        import train_model
+        metrics = train_model.train_and_evaluate()
+        prioritizer.load_models()
+        return {"success": True, "message": "Model retrained and loaded successfully.", "metrics": metrics}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
 
 @app.get("/api/sections")
 def list_sections():
@@ -63,7 +95,7 @@ def list_sections():
 def list_tasks():
     try:
         raw_tasks = get_maintenance_tasks()
-        # Enrich with AI prioritization scoring
+        # Enrich with AI prioritization scoring and COA grant probability
         scored_tasks = prioritizer.fit_and_score(raw_tasks)
         return {"success": True, "count": len(scored_tasks), "data": scored_tasks}
     except Exception as e:
@@ -109,7 +141,7 @@ def trigger_optimization():
         # 2. Run AI Prioritization
         scored_tasks = prioritizer.fit_and_score(raw_tasks)
 
-        # 3. Run Google OR-Tools CP-SAT Optimizer with Shadow Blocking
+        # 3. Run Google OR-Tools CP-SAT Optimizer with Shadow Blocking & Delay Penalty
         result = optimize_block_schedule(scored_tasks, windows, trains)
 
         # 4. If feasible/optimal, persist to Neon DB plans, plan_blocks, plan_tasks
@@ -129,6 +161,31 @@ def trigger_optimization():
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Optimization failed: {str(e)}")
+
+@app.post("/api/what-if/simulate")
+def simulate_disruption_scenario(payload: WhatIfRequest):
+    """
+    Simulates an operational incident (e.g. Broken Rail, OHE Breakage)
+    and dynamically rebalances corridor block windows using CP-SAT.
+    """
+    try:
+        raw_tasks = get_maintenance_tasks()
+        windows = get_block_windows()
+        trains = get_trains()
+
+        scored_tasks = prioritizer.fit_and_score(raw_tasks)
+        simulation_res = simulate_what_if_disruption(
+            incident_type=payload.incident_type,
+            track_section_id=payload.track_section_id,
+            required_minutes=payload.required_minutes,
+            tasks=scored_tasks,
+            windows=windows,
+            trains=trains
+        )
+
+        return {"success": True, **simulation_res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"What-If simulation failed: {str(e)}")
 
 @app.get("/api/plans/latest")
 def get_latest_optimization_plan():

@@ -102,3 +102,55 @@ export async function approveBlockPermit(payload: {
   if (!res.ok) throw new Error('Failed to approve block');
   return await res.json();
 }
+
+export interface ModelMetrics {
+  status: string;
+  best_regression_model: string;
+  regression_metrics: Record<string, { MAE: number; RMSE: number; R2: number }>;
+  classification_metrics: { model: string; accuracy: number; roc_auc: number };
+  top_feature_drivers: { feature: string; importance: number }[];
+  total_training_samples?: number;
+}
+
+export interface WhatIfResponse {
+  success: boolean;
+  incident: {
+    type: string;
+    section: string;
+    required_duration_minutes: number;
+    emergency_task_id: number;
+  };
+  rescheduled_plan: OptimizationResult;
+  disruption_summary: string;
+}
+
+export async function fetchModelMetrics(): Promise<ModelMetrics> {
+  const res = await fetch(`${API_BASE}/model/metrics`);
+  if (!res.ok) throw new Error('Failed to fetch ML model metrics');
+  const json = await res.json();
+  return json.metrics;
+}
+
+export async function triggerModelRetrain(): Promise<{ success: boolean; message: string; metrics: ModelMetrics }> {
+  const res = await fetch(`${API_BASE}/model/train`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to retrain model');
+  return await res.json();
+}
+
+export async function simulateWhatIfDisruption(payload: {
+  incident_type: string;
+  track_section_id: string;
+  required_minutes: number;
+}): Promise<WhatIfResponse> {
+  const res = await fetch(`${API_BASE}/what-if/simulate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'What-If simulation failed' }));
+    throw new Error(err.detail || 'Simulation failed');
+  }
+  return await res.json();
+}
+
