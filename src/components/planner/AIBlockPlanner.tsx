@@ -13,6 +13,9 @@ import {
   Cpu,
   AlertTriangle,
   Share2,
+  BarChart3,
+  Activity,
+  Workflow,
 } from 'lucide-react';
 import {
   fetchHealth,
@@ -179,7 +182,7 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 mt-4">
+        <div className="flex items-center gap-2 mt-4 flex-wrap">
           <button
             onClick={() => setActiveTab('OPTIMIZER')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -201,6 +204,17 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
           >
             <Layers className="w-3.5 h-3.5" />
             LIVE TMS/SMMS/TDMS DEMANDS ({tasks.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('GANTT')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'GANTT'
+                ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            MULTI-DEPT GANTT TIMELINE & ARCHITECTURE
           </button>
         </div>
       </div>
@@ -458,6 +472,289 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Multi-Department Gantt Timeline & Architecture Tab */}
+        {activeTab === 'GANTT' && (
+          <div className="space-y-6">
+            {/* Top Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                  DEPARTMENT DEMANDS
+                </span>
+                <span className="text-xl font-bold text-white mt-1 block">
+                  6 Tasks Ingested
+                </span>
+                <span className="text-[11px] text-blue-400 mt-0.5 block">
+                  TMS (2) • SMMS (2) • TDMS (2)
+                </span>
+              </div>
+
+              <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                  DECENTRALIZED BASELINE
+                </span>
+                <span className="text-xl font-bold text-slate-300 mt-1 block">
+                  300 Total Minutes
+                </span>
+                <span className="text-[11px] text-red-400 mt-0.5 block">
+                  Independent Sidelined Outages
+                </span>
+              </div>
+
+              <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                  AI CO-SCHEDULED TIME
+                </span>
+                <span className="text-xl font-bold text-emerald-400 mt-1 block">
+                  270 Minutes
+                </span>
+                <span className="text-[11px] text-emerald-300 mt-0.5 block">
+                  -30 Min Saved (10.0% Gain)
+                </span>
+              </div>
+
+              <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                  CO-UTILIZATION
+                </span>
+                <span className="text-xl font-bold text-cyan-300 mt-1 flex items-center gap-1.5">
+                  <Share2 className="w-4 h-4 text-cyan-400" />
+                  3 Depts Merged
+                </span>
+                <span className="text-[11px] text-cyan-400 mt-0.5 block">
+                  TBM ⇄ CMP (14:00 - 15:30)
+                </span>
+              </div>
+            </div>
+
+            {/* Master Corridor Gantt Schedule */}
+            <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-cyan-400" />
+                    Corridor Multi-Department Shadow Block Gantt Timeline (24h)
+                  </h3>
+                  <p className="text-xs text-slate-400 font-sans mt-0.5">
+                    Section Tambaram (TBM) ⇄ Chromepet (CMP) • Mainlines & OHE Overhead Corridors
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <span className="flex items-center gap-1.5 text-blue-300">
+                    <span className="w-2.5 h-2.5 rounded bg-blue-500" /> Engineering (TMS)
+                  </span>
+                  <span className="flex items-center gap-1.5 text-emerald-300">
+                    <span className="w-2.5 h-2.5 rounded bg-emerald-500" /> S&T (SMMS)
+                  </span>
+                  <span className="flex items-center gap-1.5 text-amber-300">
+                    <span className="w-2.5 h-2.5 rounded bg-amber-500" /> Traction (TDMS)
+                  </span>
+                </div>
+              </div>
+
+              {/* Gantt Timeline Swimlanes */}
+              <div className="space-y-4">
+                {/* Time Markers Header */}
+                <div className="grid grid-cols-8 text-center text-[10px] text-slate-500 font-mono border-b border-slate-800/80 pb-2">
+                  <span>08:00</span>
+                  <span>10:00</span>
+                  <span>12:00</span>
+                  <span className="text-cyan-400 font-bold">14:00</span>
+                  <span className="text-cyan-400 font-bold">16:00</span>
+                  <span>18:00</span>
+                  <span>20:00</span>
+                  <span>22:00</span>
+                </div>
+
+                {/* Swimlane 1: Engineering (TMS) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="font-bold text-blue-400 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      1. ENGINEERING (P-WAY / TMS)
+                    </span>
+                    <span className="text-slate-500">Track Alignment & Rail Grinding</span>
+                  </div>
+                  <div className="relative h-11 bg-slate-900/80 rounded-xl border border-slate-800 overflow-hidden">
+                    {/* Shadow Block Window Bar */}
+                    <div
+                      className="absolute top-1.5 bottom-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 border border-blue-400/60 flex items-center px-3 text-xs text-white font-bold shadow-md"
+                      style={{ left: '37.5%', width: '18.75%' }}
+                    >
+                      <span className="truncate">Track Alignment Repair (90 min)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Swimlane 2: S&T (SMMS) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      2. SIGNAL & TELECOM (S&T / SMMS)
+                    </span>
+                    <span className="text-slate-500">Signal Circuit & Point Machine 104A</span>
+                  </div>
+                  <div className="relative h-11 bg-slate-900/80 rounded-xl border border-slate-800 overflow-hidden">
+                    {/* Shadow Block Window Bar */}
+                    <div
+                      className="absolute top-1.5 bottom-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 border border-emerald-400/60 flex items-center px-3 text-xs text-white font-bold shadow-md"
+                      style={{ left: '37.5%', width: '9.375%' }}
+                    >
+                      <span className="truncate">Signal Circuit Inspection (45 min)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Swimlane 3: Traction (TDMS) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      3. TRACTION DISTRIBUTION (TRD / TDMS)
+                    </span>
+                    <span className="text-slate-500">25 kV OHE Catenary Maintenance</span>
+                  </div>
+                  <div className="relative h-11 bg-slate-900/80 rounded-xl border border-slate-800 overflow-hidden">
+                    {/* Shadow Block Window Bar */}
+                    <div
+                      className="absolute top-1.5 bottom-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 border border-amber-400/60 flex items-center px-3 text-xs text-white font-bold shadow-md"
+                      style={{ left: '40.625%', width: '12.5%' }}
+                    >
+                      <span className="truncate">OHE Tensioning (60 min)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shadow Block Co-working Bracket Callout */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-blue-950/40 via-purple-950/30 to-emerald-950/40 border border-cyan-500/40 shadow-lg flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                      <Share2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                        AI SHADOW BLOCK DETECTED & CO-SCHEDULED
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">
+                          14:00 - 15:30 IST
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-400 font-sans mt-0.5">
+                        Instead of granting 3 separate traffic disconnections totaling 195 minutes of line closure, the AI CP-SAT solver aligned Engineering, S&T, and Traction into a <strong>single 90-minute window</strong>.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-xs">
+                    +105 Min Line Availability
+                  </span>
+                </div>
+              </div>
+
+              {/* Suburban Train Traffic Profile (COA Feed) */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                    Suburban Line Train Density Profile (COA Feeder)
+                  </span>
+                  <span className="text-slate-400">Optimal Non-Peak Window Selection</span>
+                </div>
+
+                <div className="grid grid-cols-8 gap-1.5 h-16 pt-2 items-end font-mono text-[9px] text-slate-400">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-red-500/60 rounded-t h-12" title="Peak Hour: 28 Trains/hr" />
+                    <span>28 t/h</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-red-500/60 rounded-t h-14" title="Peak Hour: 32 Trains/hr" />
+                    <span>32 t/h</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-amber-500/60 rounded-t h-8" title="Mid-day: 14 Trains/hr" />
+                    <span>14 t/h</span>
+                  </div>
+                  {/* Selected Window */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-emerald-500 rounded-t h-3 ring-2 ring-emerald-400 animate-pulse" title="AI Slot: 4 Trains/hr (Optimal)" />
+                    <span className="text-emerald-400 font-bold">4 t/h</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-emerald-500/80 rounded-t h-4" title="Afternoon: 6 Trains/hr" />
+                    <span>6 t/h</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-red-500/60 rounded-t h-12" title="Evening Peak: 26 Trains/hr" />
+                    <span>26 t/h</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-red-500/60 rounded-t h-14" title="Evening Peak: 30 Trains/hr" />
+                    <span>30 t/h</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-full bg-amber-500/60 rounded-t h-6" title="Night: 10 Trains/hr" />
+                    <span>10 t/h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* End-to-End Integration Architecture Flow */}
+            <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Workflow className="w-4 h-4 text-cyan-400" />
+                Integrated System Architecture (TMS + SMMS + TDMS + COA ➔ Neon DB ➔ CP-SAT)
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
+                {/* 1. TMS */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-blue-500/30 text-xs space-y-1.5">
+                  <div className="text-[10px] font-bold text-blue-400 uppercase">1. TMS INGESTION</div>
+                  <div className="font-bold text-white">Track Management</div>
+                  <p className="text-[11px] text-slate-400 font-sans">
+                    Track geometry car defects, ultrasonic flaw detections, and overdue sleeper replacements.
+                  </p>
+                </div>
+
+                {/* 2. SMMS */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 text-xs space-y-1.5">
+                  <div className="text-[10px] font-bold text-emerald-400 uppercase">2. SMMS INGESTION</div>
+                  <div className="font-bold text-white">Signalling System</div>
+                  <p className="text-[11px] text-slate-400 font-sans">
+                    Point machine motor clearances, track circuit testing, and axle counter recalibrations.
+                  </p>
+                </div>
+
+                {/* 3. TDMS & COA */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-amber-500/30 text-xs space-y-1.5">
+                  <div className="text-[10px] font-bold text-amber-400 uppercase">3. TDMS + COA</div>
+                  <div className="font-bold text-white">Traction & Paths</div>
+                  <p className="text-[11px] text-slate-400 font-sans">
+                    25 kV OHE line disconnections coupled with live train path availability from COA.
+                  </p>
+                </div>
+
+                {/* 4. Neon PostgreSQL + OR-Tools */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-purple-500/30 text-xs space-y-1.5">
+                  <div className="text-[10px] font-bold text-purple-400 uppercase">4. AI ENGINE</div>
+                  <div className="font-bold text-white">OR-Tools + Scikit</div>
+                  <p className="text-[11px] text-slate-400 font-sans">
+                    Unified Criticality Scoring (UCI) and CP-SAT constraint optimization for shadow blocks.
+                  </p>
+                </div>
+
+                {/* 5. One-Click Permit */}
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 text-xs space-y-1.5">
+                  <div className="text-[10px] font-bold text-cyan-400 uppercase">5. DIGITAL PERMIT</div>
+                  <div className="font-bold text-white">Active Block Permit</div>
+                  <p className="text-[11px] text-slate-400 font-sans">
+                    Form T/409 digital authority issued directly to Section Controller & Track Supervisors.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
