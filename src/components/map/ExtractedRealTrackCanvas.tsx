@@ -28,7 +28,7 @@ const CANVAS_W = 4400;
 const CANVAS_H = 2600;
 
 // Project (lat, lng) to (canvasX, canvasY)
-export const projectToCanvas = (lat: number, lng: number): { x: number; y: number } => {
+const projectToCanvas = (lat: number, lng: number): { x: number; y: number } => {
   // GST corridor runs from South-West (Chengalpattu) to North-East (Chennai Central)
   const normX = (lng - MIN_LNG) / (MAX_LNG - MIN_LNG);
   // Invert Y because higher latitude is further north (top of canvas)
