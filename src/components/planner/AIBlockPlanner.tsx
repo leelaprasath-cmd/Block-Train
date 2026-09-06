@@ -24,7 +24,12 @@ import {
   ScheduledBlock,
 } from '../../lib/apiService';
 
-export const AIBlockPlanner: React.FC = () => {
+export interface AIBlockPlannerProps {
+  onBlockAuthorized?: (sectionId: string) => void;
+  onClose?: () => void;
+}
+
+export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorized, onClose }) => {
   const {
     createMaintenanceBlock,
     simulatedTime,
@@ -113,6 +118,11 @@ export const AIBlockPlanner: React.FC = () => {
         delayImpactMinutes: 4.2,
       });
 
+      // 3. Notify real-world track view
+      if (onBlockAuthorized) {
+        onBlockAuthorized(block.track_section_id);
+      }
+
       setAuthorizedSuccess(blockId);
       setTimeout(() => {
         setAuthorizedSuccess(null);
@@ -142,6 +152,16 @@ export const AIBlockPlanner: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                title="Return to Real World Track Map"
+              >
+                <span>✕ Back to Real World Track</span>
+              </button>
+            )}
+
             {/* Neon DB Status Badge */}
             <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex items-center gap-2">
               <Database className={`w-3.5 h-3.5 ${dbConnected ? 'text-emerald-400' : 'text-amber-400'}`} />
