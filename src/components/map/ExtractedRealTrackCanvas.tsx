@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react';
 import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
-import { REAL_TRACK_WAYPOINTS, REAL_STATIONS, GeoStation } from '../../data/realTracksData';
+import {
+  UP_MAIN_LINE,
+  DOWN_MAIN_LINE,
+  FAST_LINE,
+  REAL_STATIONS,
+  GeoStation
+} from '../../data/realTracksData';
 import { useRealGpsTrains, ActiveGpsTrain } from '../../lib/hooks/useRealGpsTrains';
 import { Construction, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { RealisticTrainRake } from '../train/RealisticTrainRake';
@@ -52,26 +58,6 @@ const createSvgPath = (points: { x: number; y: number }[]): string => {
   const last = points[points.length - 1];
   path += ` L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
   return path;
-};
-
-// Generate parallel offset path
-const createOffsetCanvasPoints = (
-  points: { x: number; y: number }[],
-  offsetPx: number
-): { x: number; y: number }[] => {
-  return points.map((p, i) => {
-    const next = points[i + 1] || p;
-    const prev = points[i - 1] || p;
-    const dx = next.x - prev.x;
-    const dy = next.y - prev.y;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    return {
-      x: p.x + nx * offsetPx,
-      y: p.y + ny * offsetPx
-    };
-  });
 };
 
 const ExtractedTrackControls = ({
@@ -178,22 +164,21 @@ export const ExtractedRealTrackCanvas = ({
 }: ExtractedRealTrackCanvasProps) => {
   const trains = useRealGpsTrains(speedMultiplier, blockActive);
 
-  // Project real GPS track waypoints to canvas coordinates
-  const canvasWaypoints = useMemo(() => {
-    return REAL_TRACK_WAYPOINTS.map((pt) => projectToCanvas(pt.lat, pt.lng));
-  }, []);
-
-  // Multi-track offset coordinates
-  const upLinePoints = useMemo(() => createOffsetCanvasPoints(canvasWaypoints, -10), [canvasWaypoints]);
-  const downLinePoints = useMemo(() => createOffsetCanvasPoints(canvasWaypoints, 10), [canvasWaypoints]);
-  const fastLinePoints = useMemo(() => createOffsetCanvasPoints(canvasWaypoints, 28), [canvasWaypoints]);
+  // Project real GPS track lines directly to canvas coordinates
+  const upLinePoints = useMemo(() => UP_MAIN_LINE.map((p) => projectToCanvas(p.lat, p.lng)), []);
+  const downLinePoints = useMemo(() => DOWN_MAIN_LINE.map((p) => projectToCanvas(p.lat, p.lng)), []);
+  const fastLinePoints = useMemo(() => FAST_LINE.map((p) => projectToCanvas(p.lat, p.lng)), []);
 
   const upLinePath = useMemo(() => createSvgPath(upLinePoints), [upLinePoints]);
   const downLinePath = useMemo(() => createSvgPath(downLinePoints), [downLinePoints]);
   const fastLinePath = useMemo(() => createSvgPath(fastLinePoints), [fastLinePoints]);
 
   // Block path between Tambaram and Chromepet on UP line
-  const blockPoints = useMemo(() => upLinePoints.slice(11, 15), [upLinePoints]);
+  const blockPoints = useMemo(() => {
+    return UP_MAIN_LINE
+      .filter((p) => p.lat >= 12.9230 && p.lat <= 12.9530)
+      .map((p) => projectToCanvas(p.lat, p.lng));
+  }, []);
   const blockPath = useMemo(() => createSvgPath(blockPoints), [blockPoints]);
 
   // Initial focus centered near Tambaram / Chromepet

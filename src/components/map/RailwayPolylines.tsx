@@ -1,9 +1,14 @@
 import { useEffect } from 'react';
 import { useMap } from '@vis.gl/react-google-maps';
 import {
-  SURVEYED_MAINLINE_TRACKS,
+  UP_MAIN_LINE,
+  DOWN_MAIN_LINE,
+  FAST_LINE,
+  SUBURBAN_LINE,
+} from '../../data/realTracksData';
+import {
   SURVEYED_CROSSOVER_SWITCHES,
-  SURVEYED_PLATFORM_LOOPS
+  SURVEYED_PLATFORM_LOOPS,
 } from '../../data/exactSurveyedTracks';
 
 interface RailwayPolylinesProps {
@@ -18,45 +23,62 @@ export const RailwayPolylines = ({ blockActive }: RailwayPolylinesProps) => {
 
     const polylines: google.maps.Polyline[] = [];
 
-    // 1. Render All Surveyed Real-World Mainline Tracks (Exact physical track curves)
-    SURVEYED_MAINLINE_TRACKS.forEach((track) => {
-      // Base ballast/casing line
-      const ballastLine = new google.maps.Polyline({
-        path: track.points,
+    // Helper to render rail with stone ballast casing + steel track
+    const renderTrack = (
+      points: { lat: number; lng: number }[],
+      railColor: string,
+      weight: number,
+      ballastWeight: number = 6.5
+    ) => {
+      // 1. Dark Ballast Bed
+      const ballast = new google.maps.Polyline({
+        path: points,
         geodesic: true,
         strokeColor: '#0f172a',
-        strokeOpacity: 0.6,
-        strokeWeight: 6,
-        map
+        strokeOpacity: 0.7,
+        strokeWeight: ballastWeight,
+        map,
       });
-      polylines.push(ballastLine);
+      polylines.push(ballast);
 
-      // Core Steel Rail Line (High visibility)
-      const railLine = new google.maps.Polyline({
-        path: track.points,
+      // 2. High-Visibility Steel Rail
+      const rail = new google.maps.Polyline({
+        path: points,
         geodesic: true,
-        strokeColor: '#38bdf8',
+        strokeColor: railColor,
         strokeOpacity: 0.95,
-        strokeWeight: 3.5,
-        map
+        strokeWeight: weight,
+        map,
       });
-      polylines.push(railLine);
-    });
+      polylines.push(rail);
+    };
 
-    // 2. Render Real-World Crossover Turnouts & Merging Switches (Where tracks cross and merge!)
+    // 1. Render UP Main Line (Towards Chennai Central - Blue)
+    renderTrack(UP_MAIN_LINE, '#38bdf8', 3.5);
+
+    // 2. Render DOWN Main Line (Towards Chengalpattu - Blue)
+    renderTrack(DOWN_MAIN_LINE, '#38bdf8', 3.5);
+
+    // 3. Render Fast Corridor Track (Vande Bharat & Superfast - Gold)
+    renderTrack(FAST_LINE, '#f59e0b', 3.5);
+
+    // 4. Render Suburban Track (Cyan)
+    renderTrack(SUBURBAN_LINE, '#06b6d4', 2.5, 5);
+
+    // 5. Render Real-World Crossover Turnouts & Merging Switches
     SURVEYED_CROSSOVER_SWITCHES.forEach((crossover) => {
       const switchLine = new google.maps.Polyline({
         path: crossover.points,
         geodesic: true,
-        strokeColor: '#f59e0b', // Vibrant Gold for turnout switches
-        strokeOpacity: 0.95,
-        strokeWeight: 3.5,
-        map
+        strokeColor: '#facc15', // Gold switch turnout
+        strokeOpacity: 0.9,
+        strokeWeight: 3.0,
+        map,
       });
       polylines.push(switchLine);
     });
 
-    // 3. Render Station Platform Loop Lines (Loops at Tambaram, Egmore, Chengalpattu)
+    // 6. Render Platform Loop Lines at Stations
     SURVEYED_PLATFORM_LOOPS.forEach((loop) => {
       const loopLine = new google.maps.Polyline({
         path: loop.points,
@@ -64,40 +86,37 @@ export const RailwayPolylines = ({ blockActive }: RailwayPolylinesProps) => {
         strokeColor: '#94a3b8', // Silver loop lines
         strokeOpacity: 0.8,
         strokeWeight: 2.5,
-        map
+        map,
       });
       polylines.push(loopLine);
     });
 
-    // 4. Maintenance Block Segment (between Tambaram 12.9256 and Chromepet 12.9517)
+    // 7. Active Maintenance Block Segment (between Tambaram and Chromepet on UP Line)
     let blockPolylines: google.maps.Polyline[] = [];
     if (blockActive) {
-      // Find track points between Tambaram and Chromepet
-      const blockedTracks = SURVEYED_MAINLINE_TRACKS.filter((t) =>
-        t.points.some(
-          (p) => p.lat >= 12.925 && p.lat <= 12.952 && p.lng >= 80.115 && p.lng <= 80.145
-        )
+      const blockedPoints = UP_MAIN_LINE.filter(
+        (p) => p.lat >= 12.9230 && p.lat <= 12.9530
       );
 
-      blockedTracks.slice(0, 3).forEach((bt) => {
+      if (blockedPoints.length > 1) {
         const hazardGlow = new google.maps.Polyline({
-          path: bt.points,
+          path: blockedPoints,
           geodesic: true,
           strokeColor: '#ef4444',
-          strokeOpacity: 0.5,
-          strokeWeight: 14,
-          map
+          strokeOpacity: 0.6,
+          strokeWeight: 16,
+          map,
         });
         const hazardLine = new google.maps.Polyline({
-          path: bt.points,
+          path: blockedPoints,
           geodesic: true,
           strokeColor: '#dc2626',
           strokeOpacity: 1.0,
-          strokeWeight: 5,
-          map
+          strokeWeight: 6,
+          map,
         });
         blockPolylines.push(hazardGlow, hazardLine);
-      });
+      }
     }
 
     return () => {
