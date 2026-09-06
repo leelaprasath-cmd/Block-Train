@@ -1,101 +1,131 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRailwaySimulation } from '../../context/RailwaySimulationContext';
-import { MaintenanceBlock } from '../../types/railway';
 import {
   CalendarCheck,
   Zap,
   Sparkles,
   Clock,
-  Wrench,
   CheckCircle2,
   TrendingDown,
-  ShieldCheck,
   Check,
+  Database,
+  Layers,
+  Cpu,
+  AlertTriangle,
+  Share2,
 } from 'lucide-react';
+import {
+  fetchHealth,
+  fetchTasks,
+  runAIOptimization,
+  approveBlockPermit,
+  BackendTask,
+  OptimizationResult,
+  ScheduledBlock,
+} from '../../lib/apiService';
 
 export const AIBlockPlanner: React.FC = () => {
   const {
-    maintenanceBlocks,
-    tracks,
-    approveBlock,
     createMaintenanceBlock,
-    setActiveView,
     simulatedTime,
   } = useRailwaySimulation();
 
-  // Form state
-  const [selectedTrackId, setSelectedTrackId] = useState<string>('TRK-TBM-CMP-DN');
-  const [maintenanceType, setMaintenanceType] = useState<MaintenanceBlock['maintenanceType']>('OHE_CATENARY');
-  const [durationMinutes, setDurationMinutes] = useState<number>(90);
-  const [gangName, setGangName] = useState<string>('Gang 14 - Electrical OHE Wing');
-  const [supervisor, setSupervisor] = useState<string>('A. Dhanasekaran (SSE/OHE)');
+  // Backend & Neon DB state
+  const [dbConnected, setDbConnected] = useState<boolean>(false);
+  const [tasks, setTasks] = useState<BackendTask[]>([]);
+  const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+  const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
+  const [activeTab, setActiveTab] = useState<'OPTIMIZER' | 'LIVE_TASKS' | 'GANTT'>('OPTIMIZER');
+  const [authorizedSuccess, setAuthorizedSuccess] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // AI evaluation preview state
-  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
-  const [aiResult, setAiResult] = useState<{
-    optimalStartTime: string;
-    optimalEndTime: string;
-    delayImpactMinutes: number;
-    delaySavedMinutes: number;
-    confidenceScore: number;
-    recommendedDivert: string;
-    affectedTrains: string[];
-  } | null>(null);
+  // Load database tasks and connection health on mount
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const health = await fetchHealth();
+        setDbConnected(health.database_connected);
+        if (health.database_connected) {
+          const dbTasks = await fetchTasks();
+          setTasks(dbTasks);
+        }
+      } catch (e) {
+        console.warn('Initial backend load error:', e);
+      }
+    }
+    loadData();
+  }, []);
 
-  const [authorizedSuccess, setAuthorizedSuccess] = useState<boolean>(false);
+  // Trigger Google OR-Tools AI Optimization
+  const handleRunOptimizer = async () => {
+    setIsOptimizing(true);
+    setErrorMsg(null);
+    setAuthorizedSuccess(null);
 
-  // Trigger AI evaluation
-  const handleEvaluateAI = () => {
-    setIsEvaluating(true);
-    setAuthorizedSuccess(false);
-
-    setTimeout(() => {
-      setIsEvaluating(false);
-      setAiResult({
-        optimalStartTime: '15:30',
-        optimalEndTime: '17:00',
-        delayImpactMinutes: 3.4,
-        delaySavedMinutes: 16.8,
-        confidenceScore: 96.8,
-        recommendedDivert: 'Dynamic single-line working on Up Main; routing suburban EMUs via Platform 3 loop.',
-        affectedTrains: ['TRN-40012 (Suburban)', 'TRN-12638 (Pandian SF)'],
-      });
-    }, 600);
+    try {
+      const result = await runAIOptimization();
+      setOptimizationResult(result);
+    } catch (err: any) {
+      console.error('Optimization error:', err);
+      setErrorMsg(err.message || 'Optimization solver failed.');
+    } finally {
+      setIsOptimizing(false);
+    }
   };
 
-  // Authorize & Commit block
-  const handleAuthorizeBlock = () => {
-    if (!aiResult) return;
+  // Authorize & Deploy block into Neon DB active_blocks and local digital twin
+  const handleAuthorizeBlock = async (block: ScheduledBlock) => {
+    try {
+      const blockId = `BLK-COA-${block.window_id}-${block.track_section_id}`;
+      const deptName = block.departments.join(' + ');
+      const [fromTime, toTime] = [
+        block.start_time.includes('T') ? block.start_time.split('T')[1].slice(0, 5) : '14:00',
+        block.end_time.includes('T') ? block.end_time.split('T')[1].slice(0, 5) : '15:30',
+      ];
+      const blockDate = block.start_time.includes('T') ? block.start_time.split('T')[0] : '2026-08-23';
 
-    const track = tracks.find(t => t.id === selectedTrackId);
-    if (!track) return;
+      // 1. Commit to Neon PostgreSQL DB
+      await approveBlockPermit({
+        block_id: blockId,
+        department: deptName,
+        block_date: blockDate,
+        from_time: fromTime,
+        to_time: toTime,
+        urgency: block.is_shadow_block ? 'Critical' : 'High',
+      });
 
-    createMaintenanceBlock({
-      sectionTrackId: selectedTrackId,
-      fromStation: track.fromStationId,
-      toStation: track.toStationId,
-      lineName: `${track.lineType} (${track.id})`,
-      maintenanceType,
-      startTime: aiResult.optimalStartTime,
-      endTime: aiResult.optimalEndTime,
-      durationMinutes,
-      requestedByGang: gangName,
-      supervisorName: supervisor,
-      speedRestrictionKmh: 45,
-      alternateRouteSuggested: aiResult.recommendedDivert,
-      delayImpactMinutes: aiResult.delayImpactMinutes,
-    });
+      // 2. Push to local Digital Twin state
+      createMaintenanceBlock({
+        sectionTrackId: block.track_section_id,
+        fromStation: block.track_section_id.split('-')[0] || 'TBM',
+        toStation: block.track_section_id.split('-')[1] || 'CMP',
+        lineName: `Main Corridor (${block.track_section_id})`,
+        maintenanceType: block.is_shadow_block ? 'OHE_CATENARY' : 'TRACK_TAMPING',
+        startTime: fromTime,
+        endTime: toTime,
+        durationMinutes: block.duration_minutes,
+        requestedByGang: `Joint Task Force: ${deptName}`,
+        supervisorName: 'A. Dhanasekaran (Chief Section Controller)',
+        speedRestrictionKmh: 45,
+        alternateRouteSuggested: block.is_shadow_block
+          ? 'Shadow Block Co-utilization: Single-line working on Up Main; routing EMUs via loop.'
+          : 'Normal single-line bypass authorized.',
+        delayImpactMinutes: 4.2,
+      });
 
-    setAuthorizedSuccess(true);
-    setTimeout(() => {
-      setActiveView('MAP');
-    }, 1500);
+      setAuthorizedSuccess(blockId);
+      setTimeout(() => {
+        setAuthorizedSuccess(null);
+      }, 3000);
+    } catch (e: any) {
+      alert(`Authorization failed: ${e.message}`);
+    }
   };
 
   return (
     <div className="w-full min-h-[calc(100vh-108px)] bg-[#060a15] text-slate-200 p-4 lg:p-8 font-mono overflow-y-auto">
       {/* View Header */}
-      <div className="max-w-7xl mx-auto mb-8">
+      <div className="max-w-7xl mx-auto mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -103,286 +133,314 @@ export const AIBlockPlanner: React.FC = () => {
                 <CalendarCheck className="w-5 h-5" />
               </span>
               <h2 className="text-xl font-bold text-white tracking-wide">
-                AI MAINTENANCE BLOCK PLANNER // CASCADING DELAY SOLVER
+                AI AUTOMATIC BLOCK PLANNING SYSTEM // COA-TMS-SMMS-TDMS
               </h2>
             </div>
             <p className="text-xs text-slate-400 font-sans">
-              Ministry of Railways SIH26027 Decision-Support System: Automated multi-constraint track closure optimization, conflict resolution, and dynamic re-routing.
+              Ministry of Railways SIH26027: Multi-Department Co-Scheduling, Shadow Blocking & Cascading Delay Optimization with Neon PostgreSQL.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Neon DB Status Badge */}
+            <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex items-center gap-2">
+              <Database className={`w-3.5 h-3.5 ${dbConnected ? 'text-emerald-400' : 'text-amber-400'}`} />
+              <span className="text-slate-400">NEON DB:</span>
+              <span className={`font-bold ${dbConnected ? 'text-emerald-300' : 'text-amber-300'}`}>
+                {dbConnected ? 'CONNECTED (ep-small-king)' : 'CONNECTING...'}
+              </span>
+            </div>
+
             <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300">
-              <span className="text-slate-500 mr-2">CURRENT CORRIDOR CLOCK:</span>
+              <span className="text-slate-500 mr-2">CORRIDOR CLOCK:</span>
               <span className="text-cyan-300 font-bold">{simulatedTime} IST</span>
             </div>
           </div>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-2 mt-4">
+          <button
+            onClick={() => setActiveTab('OPTIMIZER')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'OPTIMIZER'
+                ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            AI OPTIMIZER & SHADOW BLOCKS
+          </button>
+          <button
+            onClick={() => setActiveTab('LIVE_TASKS')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'LIVE_TASKS'
+                ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            LIVE TMS/SMMS/TDMS DEMANDS ({tasks.length})
+          </button>
+        </div>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Interactive Block Request & AI Engine Evaluator */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-              <Sparkles className="w-24 h-24 text-blue-400" />
-            </div>
-
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-blue-400" />
-              1. Request Maintenance Block Slot
-            </h3>
-
-            <div className="space-y-4 text-xs font-mono">
-              {/* Track Selection */}
-              <div>
-                <label className="block text-slate-400 mb-1 text-[11px]">TARGET SECTION TRACK:</label>
-                <select
-                  value={selectedTrackId}
-                  onChange={e => setSelectedTrackId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
-                  {tracks.map(trk => (
-                    <option key={trk.id} value={trk.id}>
-                      {trk.id} ({trk.fromStationId} ⇄ {trk.toStationId} • {trk.lineType})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Maintenance Activity */}
-              <div>
-                <label className="block text-slate-400 mb-1 text-[11px]">MAINTENANCE CATEGORY:</label>
-                <select
-                  value={maintenanceType}
-                  onChange={e => setMaintenanceType(e.target.value as MaintenanceBlock['maintenanceType'])}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="OHE_CATENARY">OHE Catenary & Pantograph Overhaul</option>
-                  <option value="TRACK_TAMPING">Deep Ballast Screening & Track Tamping</option>
-                  <option value="SIGNAL_UPGRADE">Signal Interlocking & Point Machine Calibration</option>
-                  <option value="RAIL_FRACTURE">Emergency Rail Fracture Rectification</option>
-                  <option value="BRIDGE_INSPECTION">Bridge Girder & Ultrasonic Testing</option>
-                </select>
-              </div>
-
-              {/* Duration Slider */}
-              <div>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-slate-400">REQUESTED DURATION:</span>
-                  <span className="text-cyan-300 font-bold">{durationMinutes} Minutes ({+(durationMinutes / 60).toFixed(1)} hrs)</span>
-                </div>
-                <input
-                  type="range"
-                  min="30"
-                  max="240"
-                  step="15"
-                  value={durationMinutes}
-                  onChange={e => setDurationMinutes(Number(e.target.value))}
-                  className="w-full accent-blue-500 cursor-pointer"
-                />
-              </div>
-
-              {/* Gang & Supervisor Details */}
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
-                <div>
-                  <label className="block text-slate-500 text-[10px]">EXECUTING GANG:</label>
-                  <input
-                    type="text"
-                    value={gangName}
-                    onChange={e => setGangName(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-500 text-[10px]">LEAD SUPERVISOR:</label>
-                  <input
-                    type="text"
-                    value={supervisor}
-                    onChange={e => setSupervisor(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
-                  />
-                </div>
-              </div>
-
-              {/* Evaluate Button */}
-              <button
-                onClick={handleEvaluateAI}
-                disabled={isEvaluating}
-                className="w-full mt-3 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50"
-              >
-                {isEvaluating ? (
-                  <>
-                    <Zap className="w-4 h-4 animate-spin" />
-                    <span>SOLVING MULTI-CONSTRAINT SCHEDULE...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>RUN AI CONFLICT EVALUATION</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* AI Optimization Result Preview */}
-          {aiResult && (
-            <div className="bg-[#0c162d] border border-blue-500/40 rounded-2xl p-6 shadow-2xl animate-fadeIn space-y-4">
-              <div className="flex items-center justify-between border-b border-blue-900/60 pb-3">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                  <span className="text-xs font-bold text-white tracking-wide">
-                    AI OPTIMIZED SLOT FOUND
-                  </span>
-                </div>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                  {aiResult.confidenceScore}% CONFIDENCE
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-                <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">RECOMMENDED WINDOW:</span>
-                  <span className="text-cyan-300 text-sm font-bold block mt-0.5">
-                    {aiResult.optimalStartTime} ➔ {aiResult.optimalEndTime} IST
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto">
+        {activeTab === 'OPTIMIZER' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Panel: Solver Control & Metrics */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-cyan-400" />
+                    Google OR-Tools CP-SAT Solver
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    Shadow Blocking v2.4
                   </span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">DELAY MITIGATION:</span>
-                  <span className="text-emerald-400 text-sm font-bold block mt-0.5 flex items-center gap-1">
-                    <TrendingDown className="w-4 h-4" /> -{aiResult.delaySavedMinutes} min saved
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-xs">
-                <span className="text-slate-400 block text-[10px] mb-1">AUTONOMOUS DIVERSION STRATEGY:</span>
-                <p className="text-slate-200 font-sans text-xs leading-relaxed">
-                  {aiResult.recommendedDivert}
+                <p className="text-xs text-slate-400 font-sans leading-relaxed mb-5">
+                  Reads real-time maintenance requests across Engineering (P-Way), S&T, and Traction from Neon DB. Solves multi-department corridor allocation to maximize shadow co-utilization and eliminate train traffic downtime.
                 </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {aiResult.affectedTrains.map(trn => (
-                    <span key={trn} className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                      {trn}
-                    </span>
-                  ))}
-                </div>
+
+                {errorMsg && (
+                  <div className="p-3 mb-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleRunOptimizer}
+                  disabled={isOptimizing}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:opacity-90 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(37,99,235,0.4)] disabled:opacity-50 text-xs"
+                >
+                  {isOptimizing ? (
+                    <>
+                      <Zap className="w-4 h-4 animate-spin text-yellow-300" />
+                      <span>SOLVING MULTI-DEPARTMENT CONSTRAINTS...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-yellow-300" />
+                      <span>EXECUTE AI MULTI-BLOCK OPTIMIZER</span>
+                    </>
+                  )}
+                </button>
+
+                {optimizationResult && (
+                  <div className="mt-6 pt-5 border-t border-slate-800/80 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">SOLVER STATUS:</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                        {optimizationResult.status} ({optimizationResult.solver_wall_time_seconds}s)
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                        <span className="text-[10px] text-slate-500 block">DOWNTIME SAVED</span>
+                        <span className="text-emerald-400 text-base font-bold flex items-center gap-1 mt-0.5">
+                          <TrendingDown className="w-4 h-4" />
+                          -{optimizationResult.metrics.minutes_saved} min
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800">
+                        <span className="text-[10px] text-slate-500 block">SHADOW BLOCKS</span>
+                        <span className="text-cyan-300 text-base font-bold flex items-center gap-1 mt-0.5">
+                          <Share2 className="w-4 h-4" />
+                          {optimizationResult.metrics.shadow_blocks_count} Co-utilized
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] font-sans text-slate-300">
+                      {optimizationResult.explanation}
+                    </div>
+
+                    {optimizationResult.plan_id && (
+                      <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        Committed to Neon DB (Plan #{optimizationResult.plan_id})
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel: Scheduled Blocks & Shadow Blocks Visualization */}
+            <div className="lg:col-span-8 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-400" />
+                  Optimized Corridor Schedule ({optimizationResult?.scheduled_blocks.length || 0} Windows)
+                </h3>
+                <span className="text-[10px] text-slate-500">Auto-calculated from COA & Timetable</span>
               </div>
 
-              {authorizedSuccess ? (
-                <div className="p-3 rounded-xl bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-center gap-2 font-bold animate-pulse">
-                  <Check className="w-4 h-4" />
-                  PERMIT AUTHORIZED! PUSHING LIVE TO DIGITAL TWIN...
+              {!optimizationResult ? (
+                <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-12 text-center text-slate-500 text-xs">
+                  <Sparkles className="w-8 h-8 mx-auto mb-3 text-blue-500/40 animate-pulse" />
+                  Click <strong className="text-slate-300">"Execute AI Multi-Block Optimizer"</strong> to pull tasks from Neon DB, calculate AI risk scores, and generate the optimal multi-department schedule.
                 </div>
               ) : (
-                <button
-                  onClick={handleAuthorizeBlock}
-                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  AUTHORIZE PERMIT & DEPLOY TO CORRIDOR
-                </button>
+                <div className="space-y-4">
+                  {optimizationResult.scheduled_blocks.map((block, i) => (
+                    <div
+                      key={i}
+                      className={`p-5 rounded-2xl border transition-all ${
+                        block.is_shadow_block
+                          ? 'bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-slate-900/80 border-blue-500/50 shadow-[0_0_25px_rgba(59,130,246,0.15)]'
+                          : 'bg-[#0b1222] border-slate-800'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-sm font-bold text-white">
+                              Section {block.track_section_id}
+                            </span>
+                            {block.is_shadow_block && (
+                              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold flex items-center gap-1 shadow-sm">
+                                <Share2 className="w-3 h-3" />
+                                SHADOW BLOCK ({block.departments_count} DEPARTMENTS CO-WORKING)
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-cyan-300 font-mono">
+                            Window: {block.start_time.replace('T', ' ').slice(0, 16)} ➔ {block.end_time.replace('T', ' ').slice(11, 16)} ({block.duration_minutes} Minutes)
+                          </p>
+                        </div>
+
+                        {authorizedSuccess === `BLK-COA-${block.window_id}-${block.track_section_id}` ? (
+                          <span className="text-xs px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" /> DEPLOYED LIVE
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleAuthorizeBlock(block)}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Authorize & Deploy</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Tasks executed concurrently within this block */}
+                      <div className="space-y-2 pt-3 border-t border-slate-800/80">
+                        <span className="text-[10px] text-slate-500 block uppercase tracking-wider">
+                          Concurrent Maintenance Tasks in this Block:
+                        </span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                          {block.tasks.map(t => (
+                            <div
+                              key={t.id}
+                              className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex flex-col justify-between gap-1.5"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  t.department === 'ENGINEERING'
+                                    ? 'bg-blue-500/20 text-blue-300'
+                                    : t.department === 'SNT'
+                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                    : 'bg-amber-500/20 text-amber-300'
+                                }`}>
+                                  {t.department}
+                                </span>
+                                <span className="text-[10px] text-cyan-400 font-mono font-bold">
+                                  Score: {t.ai_priority_score}
+                                </span>
+                              </div>
+                              <span className="text-slate-200 font-sans text-xs font-semibold">
+                                {t.task_type}
+                              </span>
+                              <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                                <span>Asset: {t.asset}</span>
+                                <span>Dur: {t.required_duration_minutes}m</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Right Column: Live Corridor Permits & Gantt Conflict Matrix */}
-        <div className="lg:col-span-7 space-y-6">
+        {/* Live Tasks from Neon DB Tab */}
+        {activeTab === 'LIVE_TASKS' && (
           <div className="bg-[#0b1222] border border-slate-800 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-400" />
-                Active & Approved Corridor Blocks ({maintenanceBlocks.length})
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Database className="w-4 h-4 text-cyan-400" />
+                Neon DB: Live Ingested Demands (TMS, SMMS, TDMS)
               </h3>
-              <span className="text-xs text-slate-500 font-mono">Southern Railway Track Permitting</span>
+              <span className="text-xs text-slate-500">Synchronized with PostgreSQL</span>
             </div>
 
-            <div className="space-y-3">
-              {maintenanceBlocks.map(block => {
-                const isActive = block.status === 'ACTIVE';
-                const isApproved = block.status === 'APPROVED';
-                const isPending = block.status === 'PENDING';
-
-                return (
-                  <div
-                    key={block.id}
-                    className={`p-4 rounded-xl border transition-all ${
-                      isActive
-                        ? 'bg-red-950/20 border-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
-                        : isApproved
-                        ? 'bg-blue-950/20 border-blue-500/30'
-                        : 'bg-slate-900/60 border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-bold text-white tracking-wide">
-                            {block.permitNumber}
-                          </span>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
-                              isActive
-                                ? 'bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse'
-                                : isApproved
-                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                                : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            }`}
-                          >
-                            {block.status}
-                          </span>
-                          <span className="text-[11px] text-slate-400 font-sans">
-                            {block.maintenanceType.replace('_', ' ')}
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-cyan-300 mt-1 font-mono font-bold">
-                          {block.fromStation} ⇄ {block.toStation} • {block.lineName}
-                        </p>
-
-                        <p className="text-xs text-slate-400 font-sans mt-1">
-                          {block.alternateRouteSuggested}
-                        </p>
-                      </div>
-
-                      <div className="text-right min-w-max">
-                        <div className="text-xs font-bold text-white bg-black/40 px-2 py-1 rounded border border-slate-800">
-                          {block.startTime} - {block.endTime}
-                        </div>
-                        <span className="text-[10px] text-slate-500 block mt-1">
-                          {block.durationMinutes} min window
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-mono">
+                <thead>
+                  <tr className="text-slate-400 border-b border-slate-800 text-[11px]">
+                    <th className="pb-3">ID</th>
+                    <th className="pb-3">DEPARTMENT</th>
+                    <th className="pb-3">TASK TYPE</th>
+                    <th className="pb-3">SECTION</th>
+                    <th className="pb-3">ASSET</th>
+                    <th className="pb-3">SEVERITY</th>
+                    <th className="pb-3">OVERDUE</th>
+                    <th className="pb-3">REQ DUR</th>
+                    <th className="pb-3">AI CRITICALITY</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {tasks.map(t => (
+                    <tr key={t.id} className="hover:bg-slate-900/40 transition-colors">
+                      <td className="py-3 text-cyan-300 font-bold">#{t.id}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          t.department === 'ENGINEERING'
+                            ? 'bg-blue-500/20 text-blue-300'
+                            : t.department === 'SNT'
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {t.department}
                         </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Supervisor: <span className="text-slate-200">{block.supervisorName}</span></span>
-
-                      {isPending && (
-                        <button
-                          onClick={() => approveBlock(block.id)}
-                          className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all text-xs flex items-center gap-1"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Approve Block</span>
-                        </button>
-                      )}
-
-                      {block.approvedByController && (
-                        <span className="text-emerald-400 flex items-center gap-1 text-[10px]">
-                          <ShieldCheck className="w-3 h-3" /> Signed: {block.approvedByController}
+                      </td>
+                      <td className="py-3 font-sans font-semibold text-slate-200">{t.task_type}</td>
+                      <td className="py-3 text-slate-300">{t.track_section_id}</td>
+                      <td className="py-3 text-slate-400">{t.asset}</td>
+                      <td className="py-3">
+                        <span className={`text-[10px] font-bold ${
+                          t.severity === 'HIGH' || t.severity === 'CRITICAL' ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          {t.severity}
                         </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                      </td>
+                      <td className="py-3 text-amber-300 font-bold">{t.overdue_days} days</td>
+                      <td className="py-3 text-slate-300">{t.required_duration_minutes} min</td>
+                      <td className="py-3">
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+                          {t.ai_priority_score || 'Calculating...'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
