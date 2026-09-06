@@ -54,24 +54,24 @@ export const RealTrainMarkers = ({
               </div>
 
               {/* Floating Train Tag Anchored Directly Above the Puck (Does NOT pull train sideways!) */}
-              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 pointer-events-none whitespace-nowrap z-30">
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 pointer-events-none whitespace-nowrap z-30">
                 <div
-                  className={`px-2 py-0.5 rounded-lg border text-[10px] font-mono font-black shadow-xl backdrop-blur-md flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-bold shadow-2xl backdrop-blur-md flex items-center gap-1.5 transition-all ${
                     isSelected
-                      ? 'bg-slate-950 text-white border-blue-400 ring-2 ring-blue-400'
-                      : 'bg-white/95 text-slate-900 border-slate-300 group-hover:border-blue-500'
+                      ? 'bg-slate-950/95 text-white border-cyan-400 ring-2 ring-cyan-400/50 shadow-cyan-500/30'
+                      : 'bg-slate-950/90 text-slate-100 border-slate-700/80 group-hover:border-cyan-400'
                   }`}
                 >
                   <span
-                    className="w-2 h-2 rounded-full shrink-0"
+                    className="w-2 h-2 rounded-full shrink-0 animate-pulse"
                     style={{ backgroundColor: train.color }}
                   />
-                  <span>#{train.id}</span>
-                  <span className="text-slate-500 font-normal">
+                  <span className="font-extrabold text-white">#{train.id}</span>
+                  <span className="text-emerald-400 font-semibold">
                     {train.currentSpeedKmH} km/h
                   </span>
                   {train.isDiverted && (
-                    <span className="px-1 py-0.2 rounded text-[8px] bg-amber-500/20 text-amber-600 font-bold border border-amber-400/40">
+                    <span className="px-1 py-0.2 rounded text-[8px] bg-amber-500/20 text-amber-300 font-bold border border-amber-400/40 animate-pulse">
                       DIVERTED
                     </span>
                   )}

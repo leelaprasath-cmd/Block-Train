@@ -5,24 +5,19 @@ import { RealStationMarkers } from './RealStationMarkers';
 import { RealTrainMarkers } from './RealTrainMarkers';
 import { useRealGpsTrains } from '../../lib/hooks/useRealGpsTrains';
 import { REAL_STATIONS, GeoStation } from '../../data/realTracksData';
-import { Layers, Construction, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Layers } from 'lucide-react';
 
 interface RealSatelliteMapProps {
   speedMultiplier: number;
   blockActive: boolean;
-  onToggleBlock: () => void;
   onSelectTrainWimt?: (trainId: string, speedKmH: number) => void;
 }
 
 // Inner Station Navigator with access to map instance
 const MapControls = ({
-  blockActive,
-  onToggleBlock,
   mapType,
   setMapType
 }: {
-  blockActive: boolean;
-  onToggleBlock: () => void;
   mapType: string;
   setMapType: (t: string) => void;
 }) => {
@@ -46,13 +41,12 @@ const MapControls = ({
 
   return (
     <>
-      {/* Top Floating Controls */}
-      <div className="absolute top-20 right-6 z-40 flex flex-col items-end gap-2.5 select-none pointer-events-auto font-mono">
-        {/* Map Type Switcher */}
-        <div className="flex items-center gap-1 bg-white/95 p-1 rounded-xl border border-slate-200 shadow-xl backdrop-blur-md">
-          <div className="flex items-center gap-1 px-2 text-slate-500 text-xs font-bold">
-            <Layers className="w-3.5 h-3.5 text-blue-600" />
-            VIEW
+      {/* Top Right Floating Map Viewport Switcher */}
+      <div className="absolute top-20 right-6 z-30 select-none pointer-events-auto font-mono">
+        <div className="flex items-center gap-1 occ-dock-glass p-1 rounded-xl shadow-xl text-xs">
+          <div className="flex items-center gap-1 px-2.5 text-slate-400 text-[11px] font-bold">
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span>GIS LAYER:</span>
           </div>
           {[
             { id: 'hybrid', label: 'Hybrid' },
@@ -62,67 +56,62 @@ const MapControls = ({
             <button
               key={item.id}
               onClick={() => setMapType(item.id)}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
                 mapType === item.id
                   ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               {item.label}
             </button>
           ))}
         </div>
-
-        {/* Maintenance Block Injector */}
-        <button
-          onClick={onToggleBlock}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold shadow-xl backdrop-blur-md transition-all ${
-            blockActive
-              ? 'bg-red-600 text-white border-red-500 ring-2 ring-red-400/50 shadow-red-500/30'
-              : 'bg-white/95 text-slate-800 border-slate-200 hover:border-red-300 hover:text-red-600'
-          }`}
-        >
-          <Construction className="w-4 h-4 text-amber-300" />
-          <span>
-            {blockActive
-              ? 'ACTIVE BLOCK: TBM ⇄ CMP (AI DIVERSION)'
-              : 'INJECT BLOCK: TBM ⇄ CMP'}
-          </span>
-          {blockActive ? (
-            <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
-          ) : (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-          )}
-        </button>
       </div>
 
-      {/* Bottom Floating Station Quick Navigator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2 max-w-[95vw] pointer-events-auto select-none font-mono">
-        <div className="flex items-center gap-1.5 bg-white/95 p-1.5 rounded-2xl border border-slate-200 shadow-2xl backdrop-blur-md overflow-x-auto max-w-full no-scrollbar">
-          <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider px-2 border-r border-slate-200 shrink-0">
-            GPS STATIONS
+      {/* Bottom Floating Station Quick Navigator Dock */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 max-w-[96vw] pointer-events-auto select-none font-mono">
+        <div className="flex items-center gap-2 occ-dock-glass p-1.5 rounded-2xl shadow-2xl overflow-x-auto max-w-full no-scrollbar">
+          <div className="flex items-center gap-1.5 px-3 border-r border-slate-700/80 shrink-0 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              MAS STATIONS
+            </span>
           </div>
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {REAL_STATIONS.map((st) => (
-              <button
-                key={st.id}
-                onClick={() => jumpToStation(st)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 ${
-                  activeStationId === st.id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-                title={`${st.name} - ${st.platforms} Platforms`}
-              >
-                {st.code}
-              </button>
-            ))}
+
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            {REAL_STATIONS.map((st) => {
+              const isMajor = ['MAS', 'MS', 'MBM', 'TBM', 'CGL'].includes(st.code);
+              const isActive = activeStationId === st.id;
+
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => jumpToStation(st)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all shrink-0 flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 ring-1 ring-blue-400'
+                      : isMajor
+                      ? 'bg-slate-800/80 text-amber-300 hover:bg-slate-700/80 hover:text-white border border-amber-400/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                  title={`${st.name} (${st.platforms} Platforms)`}
+                >
+                  <span>{st.code}</span>
+                  {isMajor && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-white/15 text-slate-200">
+                      {st.platforms}P
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-          <div className="border-l border-slate-200 pl-1.5 shrink-0">
+
+          <div className="border-l border-slate-700/80 pl-2 shrink-0 flex items-center gap-1.5">
             <button
               onClick={resetCorridorView}
-              className="px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors uppercase"
-              title="Reset Corridor View"
+              className="px-3 py-1 text-[11px] font-bold text-cyan-300 hover:text-white bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg transition-all uppercase tracking-wider"
+              title="Reset to Full Chennai Suburban Corridor View"
             >
               Overview
             </button>
@@ -136,7 +125,6 @@ const MapControls = ({
 export const RealSatelliteMap = ({
   speedMultiplier,
   blockActive,
-  onToggleBlock,
   onSelectTrainWimt
 }: RealSatelliteMapProps) => {
   const apiKey =
@@ -182,8 +170,6 @@ export const RealSatelliteMap = ({
 
           {/* Floating UI Controls */}
           <MapControls
-            blockActive={blockActive}
-            onToggleBlock={onToggleBlock}
             mapType={mapType}
             setMapType={setMapType}
           />

@@ -133,7 +133,7 @@ export const AIBlockPlanner: React.FC<AIBlockPlannerProps> = ({ onBlockAuthorize
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-108px)] bg-[#060a15] text-slate-200 p-4 lg:p-8 font-mono overflow-y-auto">
+    <div className="w-full h-full bg-[#060a15] text-slate-200 p-4 lg:p-8 font-mono overflow-y-auto">
       {/* View Header */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
