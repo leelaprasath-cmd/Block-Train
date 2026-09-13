@@ -327,20 +327,26 @@ export const getOffsetPolyline = (points: { lat: number; lng: number }[], offset
   });
 };
 
-// Exact Physical Track Lines for Southern Railway Chennai Mainline
-export const UP_MAIN_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, -0.000040);
-export const DOWN_MAIN_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, 0.000040);
-export const FAST_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, 0.000100);
-export const SUBURBAN_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, -0.000100);
+// Exact Physical Track Lines for Southern Railway Chennai Mainline (Quadruple Corridor)
+export const UP_SLOW_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, -0.000100); // Track 1: Up Suburban (to Beach)
+export const DN_SLOW_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, -0.000040); // Track 2: Down Suburban (to CGL)
+export const UP_FAST_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, 0.000040);  // Track 3: Up Fast (Vande Bharat to MAS)
+export const DN_FAST_LINE = getOffsetPolyline(CONTINUOUS_SURVEYED_CORRIDOR, 0.000100);  // Track 4: Down Fast (Superfast/Goods)
 
-// Real Moving Train definitions mapped to GPS
+// Legacy aliases for backward compatibility
+export const UP_MAIN_LINE = UP_SLOW_LINE;
+export const DOWN_MAIN_LINE = DN_SLOW_LINE;
+export const FAST_LINE = UP_FAST_LINE;
+export const SUBURBAN_LINE = DN_FAST_LINE;
+
+// Real Moving Train definitions mapped to GPS & Real-World Tracks
 export interface RealGpsTrain {
   id: string;
   name: string;
   type: 'vande_bharat' | 'express' | 'suburban' | 'freight';
   speedKmH: number;
   direction: 1 | -1; // 1 = UP (towards Chennai Central), -1 = DOWN (towards Chengalpattu)
-  trackType: 'UP' | 'DOWN' | 'FAST';
+  trackType: 'UP_SLOW' | 'DN_SLOW' | 'UP_FAST' | 'DN_FAST' | 'UP' | 'DOWN' | 'FAST';
   color: string;
   locoType: string;
   rakeComposition: string;
@@ -355,9 +361,9 @@ export const REAL_GPS_TRAIN_PRESETS: RealGpsTrain[] = [
     type: 'vande_bharat',
     speedKmH: 130,
     direction: 1,
-    trackType: 'FAST',
+    trackType: 'UP_FAST',
     color: '#2563eb',
-    locoType: 'WMS Trainset 18',
+    locoType: 'WMS Trainset 18 (25kV AC)',
     rakeComposition: '16 Coaches (Executive & Chair Car)',
     fromStation: 'Coimbatore Jn (CBE)',
     toStation: 'Chennai Central (MAS)'
@@ -368,7 +374,7 @@ export const REAL_GPS_TRAIN_PRESETS: RealGpsTrain[] = [
     type: 'express',
     speedKmH: 110,
     direction: 1,
-    trackType: 'UP',
+    trackType: 'UP_FAST',
     color: '#ef4444',
     locoType: 'WAP-7 RPM Shed',
     rakeComposition: '24 LHB Coaches',
@@ -381,7 +387,7 @@ export const REAL_GPS_TRAIN_PRESETS: RealGpsTrain[] = [
     type: 'suburban',
     speedKmH: 75,
     direction: 1,
-    trackType: 'UP',
+    trackType: 'UP_SLOW',
     color: '#0284c7',
     locoType: 'Medha 3-Phase EMU',
     rakeComposition: '12 Car Suburban Rake',
@@ -394,7 +400,7 @@ export const REAL_GPS_TRAIN_PRESETS: RealGpsTrain[] = [
     type: 'suburban',
     speedKmH: 75,
     direction: -1,
-    trackType: 'DOWN',
+    trackType: 'DN_SLOW',
     color: '#0284c7',
     locoType: 'BHEL Retrofitted EMU',
     rakeComposition: '12 Car Suburban Rake',
@@ -402,12 +408,25 @@ export const REAL_GPS_TRAIN_PRESETS: RealGpsTrain[] = [
     toStation: 'Chengalpattu Jn (CGL)'
   },
   {
+    id: '22671',
+    name: 'Tejas Superfast Express',
+    type: 'express',
+    speedKmH: 120,
+    direction: -1,
+    trackType: 'DN_FAST',
+    color: '#f59e0b',
+    locoType: 'WAP-7 RPM Shed',
+    rakeComposition: '16 Smart AC Coaches',
+    fromStation: 'Chennai Egmore (MS)',
+    toStation: 'Madurai Jn (MDU)'
+  },
+  {
     id: '66042',
     name: 'CONCOR Container Freight Express',
     type: 'freight',
     speedKmH: 60,
     direction: -1,
-    trackType: 'DOWN',
+    trackType: 'DN_FAST',
     color: '#059669',
     locoType: 'Twin WAG-9HC Electric',
     rakeComposition: '45 BLC Wagons (ISO Containers)',

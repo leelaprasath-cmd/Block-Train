@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Satellite,
-  Compass
+  Compass,
+  ArrowLeft
 } from 'lucide-react';
 
 export interface UnifiedOCCHeaderProps {
@@ -25,6 +26,7 @@ export interface UnifiedOCCHeaderProps {
   onOpenPlanner: () => void;
   onToggleWimt: () => void;
   isWimtOpen: boolean;
+  onGoToLanding?: () => void;
 }
 
 export const UnifiedOCCHeader: React.FC<UnifiedOCCHeaderProps> = ({
@@ -37,7 +39,8 @@ export const UnifiedOCCHeader: React.FC<UnifiedOCCHeaderProps> = ({
   onToggleBlock,
   onOpenPlanner,
   onToggleWimt,
-  isWimtOpen
+  isWimtOpen,
+  onGoToLanding
 }) => {
   const speeds = [1, 2, 5, 10];
 
@@ -45,6 +48,17 @@ export const UnifiedOCCHeader: React.FC<UnifiedOCCHeaderProps> = ({
     <header className="w-full h-16 occ-header-glass px-4 lg:px-6 flex items-center justify-between gap-3 z-50 fixed top-0 inset-x-0 select-none text-slate-800">
       {/* 1. Left: Official Southern Railway MAS Division Branding */}
       <div className="flex items-center gap-3 shrink-0">
+        {onGoToLanding && (
+          <button
+            onClick={onGoToLanding}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-600 text-xs font-bold transition-all shadow-xs group"
+            title="Return to Executive Landing Page & System Overview"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="hidden sm:inline">Overview</span>
+          </button>
+        )}
+
         <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 text-blue-600 shadow-sm">
           <Train className="w-5 h-5 text-blue-600" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
