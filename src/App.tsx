@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { RailwaySimulationProvider } from './context/RailwaySimulationContext';
 import { RealSatelliteMap } from './components/map/RealSatelliteMap';
 import { ExtractedRealTrackCanvas } from './components/map/ExtractedRealTrackCanvas';
+import { SpatialRailway3D } from './components/threeui/SpatialRailway3D';
 import { AIBlockPlanner } from './components/planner/AIBlockPlanner';
 import { UnifiedOCCHeader } from './components/layout/UnifiedOCCHeader';
 import { WhereIsMyTrainDrawer } from './components/wimt/WhereIsMyTrainDrawer';
@@ -9,8 +10,8 @@ import { useClock } from './lib/hooks/useClock';
 import { DEFAULT_SPEED_MULTIPLIER } from './lib/constants';
 
 function AppContent() {
-  // Mode: 'satellite' (Default: Real-World Satellite GIS Track Map) or 'real_track' (Pure Real-World Surveyed Track Geometry)
-  const [mode, setMode] = useState<'satellite' | 'real_track'>('satellite');
+  // Mode: 'spatial_3d' (ThreeUI 3D WebGL Digital Twin) | 'satellite' (Satellite GIS) | 'real_track' (Surveyed Track Vector)
+  const [mode, setMode] = useState<'spatial_3d' | 'satellite' | 'real_track'>('spatial_3d');
   const [speedMultiplier, setSpeedMultiplier] = useState(DEFAULT_SPEED_MULTIPLIER);
   const [blockActive, setBlockActive] = useState(false);
   const [plannerOpen, setPlannerOpen] = useState(false);
@@ -48,9 +49,16 @@ function AppContent() {
         isWimtOpen={wimtOpen}
       />
 
-      {/* 2. Primary Real-World Map Viewport (Fills screen below the 64px header) */}
-      <main className="w-full h-[calc(100vh-64px)] mt-16 relative bg-slate-100">
-        {mode === 'satellite' ? (
+      {/* 2. Primary High-Tech Viewport (Fills screen below the 64px header) */}
+      <main className="w-full h-[calc(100vh-64px)] mt-16 relative bg-slate-900">
+        {mode === 'spatial_3d' ? (
+          <SpatialRailway3D
+            speedMultiplier={speedMultiplier}
+            blockActive={blockActive}
+            onToggleBlock={() => setBlockActive(!blockActive)}
+            onSelectTrainWimt={handleSelectTrainForWimt}
+          />
+        ) : mode === 'satellite' ? (
           <RealSatelliteMap
             speedMultiplier={speedMultiplier}
             blockActive={blockActive}

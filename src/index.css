@@ -84,3 +84,121 @@ html, body {
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.45);
 }
 
+/* ==========================================================================
+   ThreeUI Design System & Shader Enhancements (Inspired by ThreeUI.com)
+   ========================================================================== */
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes beam-sweep {
+  0% { transform: translateY(-100%) rotate(45deg); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(200%) rotate(45deg); opacity: 0; }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ThreeUI Induction Button with Rotating Conic Gradient Rim */
+.threeui-induction {
+  position: relative;
+  isolation: isolate;
+}
+
+.threeui-induction::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  background: conic-gradient(from 0deg at 50% 50%, #3b82f6, #06b6d4, #10b981, #8b5cf6, #3b82f6);
+  border-radius: inherit;
+  z-index: -2;
+  animation: spin-slow 4s linear infinite;
+}
+
+.threeui-induction::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: inherit;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* ThreeUI Plasma Glowing Aura */
+.threeui-plasma {
+  box-shadow: 0 0 20px -3px rgba(59, 130, 246, 0.5), 0 0 8px rgba(6, 182, 212, 0.4);
+}
+
+/* ThreeUI Glassmorphic Surface */
+.threeui-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 10px 30px -5px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(226, 232, 240, 0.8),
+    inset 0 1px 0 0 rgba(255, 255, 255, 1);
+}
+
+/* ThreeUI Dark Tactical Glass */
+.threeui-glass-dark {
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    0 16px 40px -10px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+}
+
+/* ThreeUI CRT Cyber Screen Scanline Overlay */
+.threeui-crt {
+  background-image: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+}
+
+/* ThreeUI Specular Sheen Effect */
+.threeui-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.threeui-sheen::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 60%
+  );
+  transform: rotate(25deg) translateY(-100%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.threeui-sheen:hover::after {
+  transform: rotate(25deg) translateY(100%);
+}
+
+

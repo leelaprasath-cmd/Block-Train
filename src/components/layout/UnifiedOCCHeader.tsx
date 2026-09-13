@@ -16,8 +16,8 @@ import {
 
 export interface UnifiedOCCHeaderProps {
   simulatedTime: string;
-  mode: 'satellite' | 'real_track';
-  onToggleMode: (mode: 'satellite' | 'real_track') => void;
+  mode: 'spatial_3d' | 'satellite' | 'real_track';
+  onToggleMode: (mode: 'spatial_3d' | 'satellite' | 'real_track') => void;
   speedMultiplier: number;
   onSetSpeed: (speed: number) => void;
   blockActive: boolean;
@@ -161,8 +161,25 @@ export const UnifiedOCCHeader: React.FC<UnifiedOCCHeaderProps> = ({
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
         </button>
 
-        {/* Display Mode Segmented Switcher */}
+        {/* Display Mode Segmented Switcher (ThreeUI Enhanced) */}
         <div className="flex items-center gap-0.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+          <button
+            onClick={() => onToggleMode('spatial_3d')}
+            className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+              mode === 'spatial_3d'
+                ? 'bg-blue-600 text-white shadow-md ring-1 ring-blue-400/40'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+            }`}
+            title="ThreeUI 3D WebGL Spatial Railway Digital Twin with Kavach TCAS Radar"
+          >
+            <Zap className={`w-3.5 h-3.5 ${mode === 'spatial_3d' ? 'text-cyan-300 animate-pulse' : 'text-blue-600'}`} />
+            <span>3D Spatial Twin</span>
+            <span className={`px-1 py-0.2 rounded text-[8px] font-mono ${
+              mode === 'spatial_3d' ? 'bg-white/20 text-cyan-200' : 'bg-blue-100 text-blue-700'
+            }`}>
+              3D
+            </span>
+          </button>
           <button
             onClick={() => onToggleMode('satellite')}
             className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
